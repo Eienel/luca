@@ -26,6 +26,10 @@ Repository tests know whether producer code works. They usually do not know that
 7. Generate a four-file review package and apply it as a real Git branch and commit.
 8. Approve the decision and persist it locally or as a DataHub Document.
 
+An experimental backend extension can then create a review-approved,
+owner-deduplicated notification outbox with durable acknowledgement history. It
+does not claim to send messages. See [Change Campaigns](docs/CHANGE_CAMPAIGNS.md).
+
 The analysis engine is deterministic. A local LLM may later explain results, but it is not allowed to decide whether a change is safe.
 
 ## Quick start

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -47,3 +48,17 @@ class ChangeRequest(BaseModel):
 
 class WritebackRequest(BaseModel):
     analysis: dict
+
+
+class CampaignCreateRequest(BaseModel):
+    decision_id: str = Field(min_length=1, max_length=200)
+    reviewed_by: str = Field(min_length=1, max_length=200)
+    review_approved: bool
+    due_at: datetime | None = None
+
+
+class CampaignTaskUpdate(BaseModel):
+    status: Literal["acknowledged", "blocked", "completed", "reassigned"]
+    actor: str = Field(min_length=1, max_length=200)
+    note: str | None = Field(default=None, max_length=2000)
+    new_owner: str | None = Field(default=None, max_length=200)

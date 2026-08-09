@@ -8,12 +8,19 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .artifacts import write_change_package
-from .campaigns import create_campaign, get_campaign, list_campaigns, update_campaign_task
+from .campaigns import create_campaign, dispatch_github_issue, get_campaign, list_campaigns, update_campaign_task
 from .catalog import CatalogRepository
 from .datahub_mcp import DataHubMcpCatalog
 from .engine import ConsumerGraphEngine
+from .github_issues import GitHubIssueAdapter
 from .mcp_client import McpClient
-from .models import CampaignCreateRequest, CampaignTaskUpdate, ChangeRequest, WritebackRequest
+from .models import (
+    CampaignCreateRequest,
+    CampaignGitHubDispatchRequest,
+    CampaignTaskUpdate,
+    ChangeRequest,
+    WritebackRequest,
+)
 from .writeback import save_writeback
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -143,3 +150,16 @@ def campaign_task_update(campaign_id: str, task_id: str, request: CampaignTaskUp
         raise HTTPException(404, str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
+
+
+@app.post("/api/change/campaigns/{campaign_id}/tasks/{task_id}/dispatch/github")
+def campaign_github_dispatch(campaign_id: str, task_id: str, request: CampaignGitHubDispatchRequest):
+    try:
+        adapter = GitHubIssueAdapter.from_env()
+        return dispatch_github_issue(campaign_id, task_id, request.actor, ROOT / "runtime", adapter)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(503, str(exc)) from exc

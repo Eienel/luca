@@ -5,9 +5,10 @@ human records an approved change decision, it converts every known affected
 consumer into a deduplicated owner task and stores an auditable notification
 outbox.
 
-The current implementation is deliberately **outbox-only**. It creates truthful
-message drafts and durable acknowledgement events; it does not send email, Slack,
-GitHub messages, or voice calls.
+The default implementation is deliberately **outbox-only**. It creates truthful
+message drafts and durable acknowledgement events. An optional GitHub Issues
+adapter can turn one reviewed task into a real issue and store the issue URL as a
+delivery receipt. Email, Slack, and voice delivery are not implemented.
 
 ## Why this is a mechanism, not a notification button
 
@@ -34,6 +35,9 @@ delivery adapters -> acknowledgement/completion -> durable audit history**
 - Campaign and task identifiers are validated before filesystem access.
 - Campaign writes use atomic replacement.
 - AI is not used to select recipients, decide safety, or claim acknowledgement.
+- GitHub dispatch is disabled until an explicit repository and scoped token are
+  configured.
+- A stable marker lets retries find an existing issue instead of creating another.
 
 ## API sequence
 
@@ -81,22 +85,50 @@ Content-Type: application/json
 Task actions are `acknowledged`, `blocked`, `completed`, and `reassigned`.
 Reassignment also requires `new_owner`.
 
+## GitHub Issues delivery
+
+Configure a fine-grained token restricted to the target repository with
+**Issues: write** permission:
+
+```bash
+CONSUMERGRAPH_GITHUB_REPOSITORY=owner/repository
+CONSUMERGRAPH_GITHUB_TOKEN=<fine-grained-token>
+CONSUMERGRAPH_GITHUB_LABELS=changesafe,data-migration
+```
+
+Labels are optional and must already exist. Dispatch one reviewed task:
+
+```http
+POST /api/change/campaigns/{campaign_id}/tasks/{task_id}/dispatch/github
+Content-Type: application/json
+
+{
+  "actor": "reviewer@example.com"
+}
+```
+
+The adapter searches for the task's hidden stable marker before creation. A
+successful response persists the repository, issue number, URL, timestamp, actor,
+and whether the adapter created or recovered the issue. Repeating the request
+after a successful receipt returns the same campaign without another API call.
+
+Do not place a personal token in the frontend, repository, request body, or demo
+recording. Configuration belongs in the backend environment only.
+
 ## Frontend integration boundary
 
 The frontend may show a **Create coordination draft** action only after decision
-write-back succeeds. The resulting state must say **draft** or **not sent**. It may
-show owner tasks and allow manual acknowledgement, but it must not display channel
-delivery, contact destinations, or sent status because no delivery adapter exists.
+write-back succeeds. Before GitHub dispatch, the resulting state must say **draft**
+or **not sent**. After the backend returns a delivery receipt, the UI may show the
+actual issue link and `sent`; it must never infer delivery from a button click.
 
 This branch does not modify `app/static/`, so it can be merged independently from
 the collaborator's UI branch.
 
 ## Later delivery adapters
 
-GitHub issues or pull-request comments are the best first real adapter because
-they attach the request to code and produce a durable receipt. Slack and email can
-follow. AI may draft evidence-linked explanations, but deterministic ownership and
-human review remain authoritative.
+Pull-request comments, Slack, and email can follow. AI may draft evidence-linked
+explanations, but deterministic ownership and human review remain authoritative.
 
 AI voice calls should be considered only for opted-in, high-severity escalation
 after ordinary channels fail. They require identity checks, explicit AI disclosure,

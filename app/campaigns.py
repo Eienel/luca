@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+from .github_issues import GitHubIssueAdapter
 from .models import CampaignCreateRequest, CampaignTaskUpdate
 
 
@@ -227,6 +228,104 @@ def update_campaign_task(
             "at": changed_at,
             "from": previous_status,
             "to": request.status,
+        }
+    )
+    _atomic_write(runtime_dir / "campaigns" / f"{campaign['id']}.json", campaign)
+    return campaign
+
+
+def _github_issue_body(campaign: dict, task: dict, marker: str) -> str:
+    change = campaign["change"]
+    source = campaign["source"]
+    consumers = "\n".join(
+        f"- [ ] `{item['name']}` ({item['type']}, {item['domain']}, {item['hops']} hop(s))"
+        for item in task["consumers"]
+    )
+    due = campaign.get("due_at") or "Not specified"
+    return "\n".join(
+        [
+            marker,
+            "## ChangeSafe migration coordination",
+            "",
+            f"**Owner:** {task['owner']}",
+            f"**Source asset:** `{source['name']}`",
+            f"**Proposed change:** `{change['kind']}` on `{change['column']}`",
+            f"**Severity:** `{campaign['severity']}`",
+            f"**Due:** {due}",
+            "",
+            "### Known affected consumers",
+            "",
+            consumers,
+            "",
+            "### Requested response",
+            "",
+            "- Confirm or correct ownership.",
+            "- Review the generated migration package.",
+            "- Report acknowledgement, a blocker, or completion in ChangeSafe.",
+            "",
+            f"> Coverage warning: {campaign['unknown_coverage']}",
+            "",
+            "This issue was created from a recorded, human-reviewed ChangeSafe decision.",
+        ]
+    )
+
+
+def dispatch_github_issue(
+    campaign_id: str,
+    task_id: str,
+    actor: str,
+    runtime_dir: Path,
+    adapter: GitHubIssueAdapter,
+    *,
+    now: datetime | None = None,
+) -> dict:
+    campaign = get_campaign(campaign_id, runtime_dir)
+    task_id = _validate_id(task_id, "task_id")
+    task = next((item for item in campaign["tasks"] if item["id"] == task_id), None)
+    if task is None:
+        raise FileNotFoundError(f"Task {task_id!r} was not found")
+    if task["status"] == "completed":
+        raise ValueError("A completed task cannot be dispatched")
+    if task.get("delivery_status") == "sent" and task.get("delivery_receipt"):
+        return campaign
+
+    marker = f"<!-- changesafe-delivery:{campaign['id']}:{task_id} -->"
+    receipt = adapter.ensure_issue(
+        title=f"[ChangeSafe] {task['message']['subject']}",
+        body=_github_issue_body(campaign, task, marker),
+        marker=marker,
+    )
+    dispatched_at = _timestamp(now)
+    task["delivery_status"] = "sent"
+    task["contact_destination"] = f"github:{receipt.repository}"
+    task["delivery_receipt"] = {
+        "channel": "github_issue",
+        "repository": receipt.repository,
+        "issue_number": receipt.number,
+        "url": receipt.url,
+        "created": receipt.created,
+        "at": dispatched_at,
+    }
+    task["events"].append(
+        {
+            "type": "github_issue_dispatched",
+            "actor": actor,
+            "at": dispatched_at,
+            "issue_number": receipt.number,
+            "url": receipt.url,
+            "created": receipt.created,
+        }
+    )
+    sent_count = sum(item.get("delivery_status") == "sent" for item in campaign["tasks"])
+    campaign["delivery_mode"] = "github_issues" if sent_count == len(campaign["tasks"]) else "mixed"
+    campaign["events"].append(
+        {
+            "type": "task_dispatched",
+            "task_id": task_id,
+            "actor": actor,
+            "at": dispatched_at,
+            "channel": "github_issue",
+            "url": receipt.url,
         }
     )
     _atomic_write(runtime_dir / "campaigns" / f"{campaign['id']}.json", campaign)

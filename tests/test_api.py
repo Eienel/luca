@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import app.main as main_module
 from fastapi.testclient import TestClient
 
@@ -83,6 +85,22 @@ def test_reviewed_decision_can_create_and_track_an_unsent_campaign(tmp_path, mon
     assert all(task["delivery_status"] == "not_sent" for task in campaign["tasks"])
 
     task_id = campaign["tasks"][0]["id"]
+    fake_adapter = SimpleNamespace(
+        ensure_issue=lambda **_kwargs: SimpleNamespace(
+            repository="acme/data",
+            number=42,
+            url="https://github.com/acme/data/issues/42",
+            created=True,
+        )
+    )
+    monkeypatch.setattr(main_module.GitHubIssueAdapter, "from_env", classmethod(lambda _cls: fake_adapter))
+    dispatch = client.post(
+        f"/api/change/campaigns/{campaign['id']}/tasks/{task_id}/dispatch/github",
+        json={"actor": "human-reviewer"},
+    )
+    assert dispatch.status_code == 200
+    assert dispatch.json()["tasks"][0]["delivery_receipt"]["issue_number"] == 42
+
     update = client.post(
         f"/api/change/campaigns/{campaign['id']}/tasks/{task_id}",
         json={"status": "acknowledged", "actor": "affected-owner", "note": "I own this migration"},

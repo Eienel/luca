@@ -159,6 +159,11 @@ The same dependency intelligence can later power IncidentGraph, TimeFence,
 TrainServe, and, through a warehouse execution layer, business-customer journey
 convergence.
 
+After human review, [Change Campaigns](docs/CHANGE_CAMPAIGNS.md) can turn the
+known impact graph into owner-specific migration tasks, notifications,
+acknowledgements, and durable completion evidence. External outreach and AI calls
+remain post-submission work; the current MVP does not claim to contact owners.
+
 See [docs/VALIDATION.md](docs/VALIDATION.md) for the evidence, limits, and local
 break/repair proof behind the product claim.
 

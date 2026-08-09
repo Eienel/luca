@@ -48,6 +48,39 @@ Do not rebuild these mechanisms in the frontend:
 The current frontend is a functional scaffold in `app/static/`. It may be fully
 redesigned as long as the API contracts and truthful claims below remain intact.
 
+## Deadline scope: what to build first
+
+The submission deadline is tomorrow. Protect the working vertical slice and use
+this order strictly:
+
+### P0 — required for submission
+
+- Preserve the complete source -> impact -> repair -> review -> write-back flow.
+- Make the known affected consumers, owners, teams, domains, and coverage warning
+  understandable without narration.
+- Make generated compatibility and regression SQL readable in the recording.
+- Give package generation and decision write-back visible success/error states.
+- Keep rename, remove, and type-change flows working.
+- Pass the existing tests and complete the golden demo path below.
+
+### P1 — only after P0 works
+
+- Improve the consumer graph/map visualization.
+- Add copy-to-clipboard actions for generated code.
+- Add restrained transitions that clarify analysis progress and result changes.
+- Polish mobile behavior and non-demo assets beyond the required responsive pass.
+
+### P2 — post-submission product direction
+
+- Owner notification, acknowledgement tracking, and migration campaigns.
+- GitHub/Slack/email delivery adapters.
+- AI-assisted explanations or outreach drafts.
+- Voice calls or autonomous follow-up.
+
+Do not trade a working P0 path for a P1 or P2 feature. In particular, do not show
+messages as sent, owners as contacted, or code as changed unless a backend action
+and durable receipt actually exist.
+
 ## Required user journey
 
 ### 1. Establish DataHub connection and source
@@ -97,6 +130,60 @@ Provide two clear actions:
 - **Approve and record** — persists the decision locally or through DataHub MCP.
 
 Neither action should imply autonomous merging. Human review is mandatory.
+
+### 6. Close with a review receipt
+
+After package generation or write-back, keep the result in context rather than
+showing a transient toast only. The final state should show:
+
+- what was generated or recorded;
+- that human review remains required;
+- the known owners who would need coordination;
+- the unknown-coverage warning; and
+- the next truthful action available now.
+
+It may say, for example, **“4 known owners identified for coordination.”** It may
+not say they were notified. The future notification mechanism is specified in
+`docs/CHANGE_CAMPAIGNS.md` and is not part of tomorrow's backend contract.
+
+## Screen and component map
+
+The experience may be one scrolling workbench or several views, but it must expose
+these seven regions in this order:
+
+| Region | Required content | Existing data source |
+| --- | --- | --- |
+| Runtime bar | Demo/DataHub MCP mode and health | `GET /api/health` |
+| Source selector | Shared asset, platform, owner, domain | `GET /api/assets` |
+| Convergence summary | Score, risk, direct/total consumers, teams, domains | convergence endpoint |
+| Consumer evidence | Name, type, owner, domain, hop distance | convergence endpoint |
+| ConsumerSpec | Column, roles, consumer count, confidence | contract endpoint |
+| Change workbench | Change form, verdict, severity, affected consumers, coverage | analyze endpoint |
+| Repair and receipt | SQL, test, package result, write-back result | analyze/package/write-back |
+
+On desktop, convergence and organizational reach may share a row; the analysis
+result and generated repair should share the main workbench when space permits.
+On narrow screens, preserve the same reading order and allow code blocks to scroll
+inside their containers rather than causing page-level horizontal overflow.
+
+## Golden demo path
+
+This exact path must work before visual extras are attempted:
+
+1. Start in deterministic demo mode and visibly confirm runtime readiness.
+2. Select `customer_360` and reveal its organizational convergence.
+3. Let the viewer identify multiple downstream teams and domains.
+4. Show `customer_id` in the observed ConsumerSpec.
+5. Propose rename `customer_id` -> `buyer_id`.
+6. Show the migration-required result, known affected consumers, and unknown
+   coverage before focusing on generated code.
+7. Show compatibility SQL and the executable regression test.
+8. Generate the four-file review package.
+9. Approve and record the reviewed decision.
+10. End on the durable receipt and the owners identified for coordination.
+
+The flow should be understandable in under two minutes and recordable at 1080p
+without browser zoom tricks.
 
 ## Existing API contract
 
@@ -269,7 +356,7 @@ pull-request review rather than pushing directly to `main`.
 
 ```text
 Read docs/UI_UX_HANDOFF.md completely, then inspect app/static, app/main.py,
-tests/test_api.py, and the existing screenshots. Redesign the ChangeSafe frontend
+tests/test_api.py, docs/CHANGE_CAMPAIGNS.md, and the existing screenshots. Redesign the ChangeSafe frontend
 for a two-minute DataHub hackathon judge demo. Preserve the existing API contracts,
 deterministic backend, truthful coverage language, all three change modes, package
 generation, and decision write-back. Implement loading, empty, failure, blocked,
@@ -277,5 +364,7 @@ and success states. Keep SQL readable at 1080p, use accessible semantic controls
 escape API-sourced content, and avoid paid APIs or autonomous-merge claims. Run
 the listed tests and browser-check the complete journey before proposing the PR.
 Do not change backend behavior merely to simplify the design; flag any needed API
-change separately with a reason and migration plan.
+change separately with a reason and migration plan. Follow the P0/P1/P2 priority
+order. Do not implement or imply sent notifications or AI calls for this deadline;
+the final state may truthfully show owners identified for future coordination.
 ```

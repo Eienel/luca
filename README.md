@@ -28,7 +28,8 @@ Repository tests know whether producer code works. They usually do not know that
 
 An experimental backend extension can then create a review-approved,
 owner-deduplicated notification outbox with durable acknowledgement history. It
-does not claim to send messages. See [Change Campaigns](docs/CHANGE_CAMPAIGNS.md).
+does not claim to send messages. See the
+[Change Campaigns API guide](docs/CHANGE_CAMPAIGNS_API.md).
 
 The analysis engine is deterministic. A local LLM may later explain results, but it is not allowed to decide whether a change is safe.
 

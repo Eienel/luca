@@ -300,7 +300,11 @@ pre { min-height: 178px; max-height: 310px; margin: 0; padding: 18px; overflow: 
 .receipt.error strong { color: var(--red); }
 .receipt p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.55; overflow-wrap: anywhere; }
 .file-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-.file-list code { padding: 5px 7px; border: 1px solid var(--line); border-radius: 6px; color: var(--blue); background: rgba(235, 245, 255, .4); font-size: 8px; }
+.file-list button { display: inline-flex; align-items: center; gap: 7px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; color: var(--blue); background: rgba(235, 245, 255, .4); cursor: pointer; }
+.file-list button:hover { border-color: var(--line-bright); background: rgba(235, 245, 255, .72); }
+.file-list button:disabled, .download-package:disabled { cursor: wait; opacity: .56; }
+.file-list code { color: inherit; font-size: 8px; }
+.download-package { display: inline-flex; align-items: center; justify-content: space-between; gap: 18px; min-width: 190px; margin-top: 12px; padding: 10px 13px; border: 1px solid var(--text); border-radius: 9px; color: var(--bg); background: var(--text); font-size: 11px; font-weight: 750; cursor: pointer; }
 
 .banner { margin-bottom: 14px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 10px; font-size: 12px; }
 .banner-error { color: var(--red); border-color: rgba(139, 48, 56, .34); background: rgba(139, 48, 56, .08); }

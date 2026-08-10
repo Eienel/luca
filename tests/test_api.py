@@ -1,3 +1,6 @@
+from io import BytesIO
+from zipfile import ZipFile
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -25,6 +28,24 @@ def test_http_vertical_slice():
     assert package.status_code == 200
     assert package.json()["review_status"] == "human_review_required"
     assert len(package.json()["files"]) == 4
+
+    archive = client.post(
+        "/api/change/package/download",
+        json={"asset_id": "customer_360", "kind": "rename", "column": "customer_id", "new_name": "buyer_id"},
+    )
+    assert archive.status_code == 200
+    assert archive.headers["content-type"] == "application/zip"
+    with ZipFile(BytesIO(archive.content)) as downloaded:
+        assert set(downloaded.namelist()) == set(package.json()["files"])
+        assert "buyer_id AS customer_id" in downloaded.read("models/compatibility_view.sql").decode()
+
+    migration = client.post(
+        "/api/change/package/download?file=MIGRATION.md",
+        json={"asset_id": "customer_360", "kind": "rename", "column": "customer_id", "new_name": "buyer_id"},
+    )
+    assert migration.status_code == 200
+    assert "attachment; filename=\"MIGRATION.md\"" == migration.headers["content-disposition"]
+    assert "Coverage warning" in migration.text
 
 
 def test_http_rejects_incomplete_change_requests():

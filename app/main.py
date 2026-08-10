@@ -3,11 +3,13 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from io import BytesIO
+
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from .artifacts import write_change_package
+from .artifacts import change_package_archive, change_package_files, write_change_package
 from .catalog import CatalogRepository
 from .datahub_mcp import DataHubMcpCatalog
 from .engine import ConsumerGraphEngine
@@ -110,6 +112,35 @@ def package_change(request: ChangeRequest):
             mcp_adapter.enrich_column(catalog, request.asset_id, request.column)
         analysis = engine.analyze_change(request)
         return write_change_package(analysis, RUNTIME_DIR / "generated")
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@app.post("/api/change/package/download")
+def download_change_package(request: ChangeRequest, file: str | None = Query(default=None)):
+    try:
+        if mcp_adapter:
+            mcp_adapter.enrich_column(catalog, request.asset_id, request.column)
+        analysis = engine.analyze_change(request)
+        files = change_package_files(analysis)
+        if file is not None:
+            if file not in files:
+                raise HTTPException(404, "Package file not found")
+            media_type = "application/json" if file.endswith(".json") else "text/markdown" if file.endswith(".md") else "text/plain"
+            filename = Path(file).name
+            return Response(
+                files[file],
+                media_type=media_type,
+                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            )
+        archive = change_package_archive(analysis)
+        return StreamingResponse(
+            BytesIO(archive),
+            media_type="application/zip",
+            headers={"Content-Disposition": 'attachment; filename="changesafe-review-package.zip"'},
+        )
     except KeyError as exc:
         raise HTTPException(404, str(exc)) from exc
     except ValueError as exc:

@@ -278,10 +278,47 @@ async function analyzeChange(event) {
   }
 }
 
-function renderReceipt(id, title, message, files = [], error = false) {
+function renderReceipt(id, title, message, files = [], error = false, packageId = "") {
   const element = $(id);
   element.className = `receipt${error ? " error" : ""}`;
-  element.innerHTML = `<strong>${escapeHtml(title)}</strong><p>${escapeHtml(message)}</p>${files.length ? `<div class="file-list">${files.map((file) => `<code>${escapeHtml(file)}</code>`).join("")}</div>` : ""}`;
+  const fileButtons = files.length ? `<div class="file-list">${files.map((file) => `<button type="button" data-download-file="${escapeHtml(file)}"><code>${escapeHtml(file)}</code><span aria-hidden="true">↓</span></button>`).join("")}</div>` : "";
+  const archiveButton = packageId ? `<button type="button" class="download-package" data-download-package="${escapeHtml(packageId)}"><span>Download all files</span><span aria-hidden="true">↓</span></button>` : "";
+  element.innerHTML = `<strong>${escapeHtml(title)}</strong><p>${escapeHtml(message)}</p>${fileButtons}${archiveButton}`;
+  element.querySelectorAll("[data-download-file]").forEach((button) => button.addEventListener("click", () => downloadPackage(button.dataset.downloadFile, packageId, button)));
+  element.querySelector("[data-download-package]")?.addEventListener("click", (event) => downloadPackage("", packageId, event.currentTarget));
+}
+
+async function downloadPackage(file, packageId, button) {
+  const previous = button.innerHTML;
+  button.disabled = true;
+  if (!file) button.querySelector("span").textContent = "Preparing ZIP";
+  try {
+    const suffix = file ? `?file=${encodeURIComponent(file)}` : "";
+    const response = await fetch(`/api/change/package/download${suffix}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(currentChange),
+    });
+    if (!response.ok) {
+      let detail = `Download failed (${response.status})`;
+      try { detail = (await response.json()).detail || detail; } catch {}
+      throw new Error(detail);
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file ? file.split("/").pop() : `${packageId}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    setGlobalError(error.message);
+  } finally {
+    button.disabled = false;
+    button.innerHTML = previous;
+  }
 }
 
 async function generatePackage() {
@@ -293,7 +330,7 @@ async function generatePackage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(currentChange),
     });
-    renderReceipt("package-result", "Review package ready", `${result.package_id} · Human review required`, result.files);
+    renderReceipt("package-result", "Review package ready", `${result.package_id} · Human review required`, result.files, false, result.package_id);
     document.querySelectorAll(".flow li").forEach((item, index) => item.classList.toggle("active", index <= 3));
   } catch (error) {
     renderReceipt("package-result", "Package generation failed", error.message, [], true);

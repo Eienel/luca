@@ -103,6 +103,26 @@ in DataHub.
 
 Demo script: `docs/DEMO.md`
 
+## Logo and images
+
+Both brand images are rendered from the site favicon,
+`app/static/changesafe-logo.svg`, so the Devpost page matches the deployed UI.
+
+- Project logo / thumbnail: `docs/brand/logo-1024.png` (1024x1024, transparent
+  outside the rounded corners).
+- Gallery cover: `docs/brand/logo-card-1200x800.png` (1200x800, the 3:2 ratio
+  Devpost recommends).
+
+Upload order for the image gallery:
+
+1. `docs/brand/logo-card-1200x800.png`
+2. `docs/screenshots/01-convergence.jpg`
+3. `docs/screenshots/02-impact-and-migration.jpg`
+4. `docs/screenshots/03-reviewed-and-recorded.jpg`
+
+Regenerate both from the SVG with headless Chromium if the mark ever changes;
+see `scripts/render_brand_images.sh`.
+
 ## Truthful demo claims
 
 Say “every known consumer,” never “every consumer.” State that missing lineage or

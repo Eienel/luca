@@ -165,10 +165,5 @@ break/repair proof behind the product claim.
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the bounded build and
 [examples/change-package](examples/change-package) for a judge-readable output.
 
-Ready-to-paste project copy is in [docs/SUBMISSION_COPY.md](docs/SUBMISSION_COPY.md).
-The frontend redesign contract and Claude Code kickoff prompt are in
-[docs/UI_UX_HANDOFF.md](docs/UI_UX_HANDOFF.md).
-
-## License
 
 Apache License 2.0.

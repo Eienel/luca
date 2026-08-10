@@ -45,6 +45,14 @@ Open <http://localhost:8000>.
 
 The default `CONSUMERGRAPH_CATALOG_MODE=demo` requires no DataHub instance or paid API.
 
+## Vercel preview
+
+The repository includes a supported FastAPI entrypoint at `app/index.py`, so it
+can be imported directly from GitHub into Vercel without a separate frontend
+build. Demo package and write-back artifacts use Vercel's temporary writable
+directory and are therefore ephemeral; durable production decisions still belong
+in DataHub. See [docs/VERCEL.md](docs/VERCEL.md) for setup and verification.
+
 ## DataHub MCP mode
 
 ChangeSafe uses the official read tools `get_entities`, `list_schema_fields`,

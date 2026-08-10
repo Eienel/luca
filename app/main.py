@@ -18,6 +18,18 @@ from .writeback import save_writeback
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _runtime_dir() -> Path:
+    configured = os.getenv("CONSUMERGRAPH_RUNTIME_DIR")
+    if configured:
+        return Path(configured)
+    if os.getenv("VERCEL"):
+        return Path("/tmp/consumergraph-runtime")
+    return ROOT / "runtime"
+
+
+RUNTIME_DIR = _runtime_dir()
+
+
 def _load_catalog() -> tuple[CatalogRepository, str, DataHubMcpCatalog | None]:
     mode = os.getenv("CONSUMERGRAPH_CATALOG_MODE", "demo").lower()
     if mode == "demo":
@@ -86,7 +98,7 @@ def analyze(request: ChangeRequest):
 @app.post("/api/change/writeback")
 def writeback(request: WritebackRequest):
     try:
-        return save_writeback(request.analysis, ROOT / "runtime")
+        return save_writeback(request.analysis, RUNTIME_DIR)
     except (RuntimeError, ValueError) as exc:
         raise HTTPException(500, str(exc)) from exc
 
@@ -97,7 +109,7 @@ def package_change(request: ChangeRequest):
         if mcp_adapter:
             mcp_adapter.enrich_column(catalog, request.asset_id, request.column)
         analysis = engine.analyze_change(request)
-        return write_change_package(analysis, ROOT / "runtime" / "generated")
+        return write_change_package(analysis, RUNTIME_DIR / "generated")
     except KeyError as exc:
         raise HTTPException(404, str(exc)) from exc
     except ValueError as exc:

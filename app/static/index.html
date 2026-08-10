@@ -3,70 +3,142 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ChangeSafe by ConsumerGraph</title>
+  <meta name="description" content="ChangeSafe turns DataHub dependency evidence into reviewable, tested schema migrations.">
+  <title>ChangeSafe — DataHub-aware schema migrations</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <main>
-    <header class="hero">
-      <div>
-        <p class="eyebrow">DATAHUB · CHANGE-SAFE MIGRATIONS</p>
-        <h1>Ship schema changes<br><span>without breaking consumers.</span></h1>
-        <p class="lede">ChangeSafe reads DataHub's organizational graph, finds every known consumer at risk, and turns impact evidence into tested migration code and a reviewable Git change.</p>
-      </div>
-      <div id="runtime-status" class="status"><i></i> Loading catalog</div>
-    </header>
+  <a class="skip-link" href="#workspace">Skip to workspace</a>
 
-    <section class="controls panel">
-      <label>Shared data asset
-        <select id="asset-select"></select>
-      </label>
-      <button id="discover-button" class="primary">Discover convergence</button>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="ChangeSafe home">
+      <span class="brand-mark" aria-hidden="true">CS</span>
+      <span><strong>ChangeSafe</strong><small>by ConsumerGraph</small></span>
+    </a>
+    <div class="topbar-context" aria-label="Product context">
+      <span>DataHub</span><i aria-hidden="true"></i><span>Schema change control</span>
+    </div>
+    <div id="runtime-status" class="runtime" role="status" aria-live="polite">
+      <span class="runtime-dot" aria-hidden="true"></span>
+      <span>Connecting to catalog</span>
+    </div>
+  </header>
+
+  <main id="workspace">
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">ORGANIZATIONAL CHANGE INTELLIGENCE</p>
+        <h1 id="page-title">Know what breaks.<br><span>Ship the repair.</span></h1>
+      </div>
+      <p class="intro-copy">Repository tests see producer code. ChangeSafe reads DataHub’s organizational graph to expose every <em>known</em> downstream dependency, generate a compatibility migration, and leave a reviewed decision behind.</p>
     </section>
 
-    <section id="overview" class="grid hidden">
-      <article class="score-card panel">
-        <p class="eyebrow">CONVERGENCE SCORE</p>
-        <div class="score"><span id="score">0</span><small>/100</small></div>
-        <div id="risk" class="risk">—</div>
-        <p>Measures cross-team, cross-domain dependency—not simple query popularity.</p>
+    <ol class="flow" aria-label="ChangeSafe workflow">
+      <li class="active"><span>01</span>Context</li>
+      <li><span>02</span>Impact</li>
+      <li><span>03</span>Repair</li>
+      <li><span>04</span>Review</li>
+      <li><span>05</span>Record</li>
+    </ol>
+
+    <div id="global-error" class="banner banner-error hidden" role="alert"></div>
+
+    <section class="source-panel panel" aria-labelledby="source-title">
+      <div class="section-number" aria-hidden="true">01</div>
+      <div class="source-copy">
+        <p class="eyebrow muted">SOURCE CONTEXT</p>
+        <h2 id="source-title">Choose the shared asset</h2>
+        <p>DataHub provides lineage, query evidence, ownership, and domain context.</p>
+      </div>
+      <label class="field source-field">
+        <span>Data asset</span>
+        <select id="asset-select" aria-describedby="asset-details"></select>
+      </label>
+      <button id="discover-button" class="button button-primary" type="button">
+        <span>Trace organizational impact</span><b aria-hidden="true">→</b>
+      </button>
+      <div id="asset-details" class="asset-details" aria-live="polite"></div>
+    </section>
+
+    <section id="overview" class="overview hidden" aria-labelledby="overview-title" aria-busy="false">
+      <article class="score-panel panel">
+        <div class="section-head compact">
+          <div><p class="eyebrow muted">CONVERGENCE</p><h2 id="overview-title">Organizational blast radius</h2></div>
+          <span id="risk" class="severity-badge">—</span>
+        </div>
+        <div class="score-wrap">
+          <div class="score"><span id="score">0</span><small>/100</small></div>
+          <p>Cross-team and cross-domain dependency—not simple query popularity.</p>
+        </div>
       </article>
-      <article class="panel">
-        <p class="eyebrow">ORGANIZATIONAL REACH</p>
+      <article class="reach-panel panel">
+        <div class="section-head compact">
+          <div><p class="eyebrow muted">DATAHUB EVIDENCE</p><h2>Known organizational reach</h2></div>
+          <span class="evidence-tag"><i aria-hidden="true"></i>Graph-derived</span>
+        </div>
         <div id="metrics" class="metrics"></div>
       </article>
     </section>
 
-    <section id="consumer-section" class="panel hidden">
+    <section id="consumer-section" class="panel hidden" aria-labelledby="consumer-title">
       <div class="section-head">
-        <div><p class="eyebrow">CONSUMER MAP</p><h2>Where consumers converge</h2></div>
-        <span id="consumer-count" class="pill"></span>
+        <div>
+          <p class="eyebrow muted">02 · CONSUMER MAP</p>
+          <h2 id="consumer-title">Where dependencies converge</h2>
+          <p class="section-description">Organizational consumers—not business-customer records.</p>
+        </div>
+        <span id="consumer-count" class="count-pill"></span>
       </div>
-      <div id="consumers" class="consumer-list"></div>
+      <div class="graph-shell">
+        <div id="source-node" class="source-node"></div>
+        <div class="graph-connector" aria-hidden="true"><span></span></div>
+        <div id="consumers" class="consumer-grid"></div>
+      </div>
     </section>
 
-    <section id="contract-section" class="panel hidden">
+    <section id="contract-section" class="panel hidden" aria-labelledby="contract-title">
       <div class="section-head">
-        <div><p class="eyebrow">CONSUMERSPEC</p><h2>Observed dependency contract</h2></div>
-        <span class="pill amber">Evidence, not policy</span>
+        <div>
+          <p class="eyebrow muted">03 · CONSUMERSPEC</p>
+          <h2 id="contract-title">Observed dependency contract</h2>
+          <p class="section-description">What downstream behavior suggests about each source column.</p>
+        </div>
+        <span class="evidence-pill">Evidence, not policy</span>
       </div>
-      <div id="contract" class="contract-table"></div>
+      <div class="table-shell">
+        <div class="contract-header" aria-hidden="true"><span>Column</span><span>Observed role</span><span>Consumers</span><span>Confidence</span></div>
+        <div id="contract" class="contract-table"></div>
+      </div>
     </section>
 
-    <section id="change-section" class="panel hidden">
+    <section id="change-section" class="change-panel panel hidden" aria-labelledby="change-title">
       <div class="section-head">
-        <div><p class="eyebrow">CHANGESAFE</p><h2>Pressure-test a schema change</h2></div>
+        <div>
+          <p class="eyebrow muted">04 · CHANGESAFE</p>
+          <h2 id="change-title">Pressure-test a schema change</h2>
+          <p class="section-description">The verdict is deterministic. Generated code still requires human review.</p>
+        </div>
+        <span class="human-gate"><i aria-hidden="true">◆</i> Human gate required</span>
       </div>
       <form id="change-form" class="change-form">
-        <label>Change type
-          <select id="change-kind"><option value="rename">Rename column</option><option value="remove">Remove column</option><option value="type_change">Change type</option></select>
+        <label class="field"><span>Change type</span>
+          <select id="change-kind">
+            <option value="rename">Rename column</option>
+            <option value="remove">Remove column</option>
+            <option value="type_change">Change type</option>
+          </select>
         </label>
-        <label>Column<select id="column-select"></select></label>
-        <label id="new-value-label">New name<input id="new-value" value="buyer_id" required></label>
-        <button class="primary" type="submit">Analyze impact</button>
+        <label class="field"><span>Source column</span><select id="column-select"></select></label>
+        <label id="new-value-label" class="field"><span>New name</span><input id="new-value" value="buyer_id" required autocomplete="off"></label>
+        <button id="analyze-button" class="button button-primary" type="submit"><span>Analyze impact</span><b aria-hidden="true">→</b></button>
       </form>
-      <div id="analysis" class="hidden"></div>
+      <div id="analysis" class="analysis hidden" aria-live="polite"></div>
     </section>
+
+    <footer>
+      <p><strong>ChangeSafe</strong> reads organizational metadata—not raw customer records.</p>
+      <p>Known coverage is explicit. Human review is mandatory.</p>
+    </footer>
   </main>
   <script src="/static/app.js"></script>
 </body>

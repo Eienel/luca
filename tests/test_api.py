@@ -1,3 +1,6 @@
+from types import SimpleNamespace
+
+import app.main as main_module
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -56,3 +59,54 @@ def test_all_advertised_change_modes_generate_review_packages():
             "models/compatibility_view.sql",
             "tests/change_regression.sql",
         }
+
+
+def test_reviewed_decision_can_create_and_track_an_unsent_campaign(tmp_path, monkeypatch):
+    monkeypatch.setattr(main_module, "ROOT", tmp_path)
+    analysis = client.post(
+        "/api/change/analyze",
+        json={"asset_id": "customer_360", "kind": "rename", "column": "customer_id", "new_name": "buyer_id"},
+    ).json()
+    decision = client.post("/api/change/writeback", json={"analysis": analysis})
+    assert decision.status_code == 200
+
+    campaign_response = client.post(
+        "/api/change/campaigns",
+        json={
+            "decision_id": decision.json()["document_id"],
+            "reviewed_by": "human-reviewer",
+            "review_approved": True,
+        },
+    )
+    assert campaign_response.status_code == 200
+    campaign = campaign_response.json()
+    assert campaign["delivery_mode"] == "outbox_only"
+    assert campaign["consumer_count"] == len(analysis["known_affected_consumers"])
+    assert all(task["delivery_status"] == "not_sent" for task in campaign["tasks"])
+
+    task_id = campaign["tasks"][0]["id"]
+    fake_adapter = SimpleNamespace(
+        ensure_issue=lambda **_kwargs: SimpleNamespace(
+            repository="acme/data",
+            number=42,
+            url="https://github.com/acme/data/issues/42",
+            created=True,
+        )
+    )
+    monkeypatch.setattr(main_module.GitHubIssueAdapter, "from_env", classmethod(lambda _cls: fake_adapter))
+    dispatch = client.post(
+        f"/api/change/campaigns/{campaign['id']}/tasks/{task_id}/dispatch/github",
+        json={"actor": "human-reviewer"},
+    )
+    assert dispatch.status_code == 200
+    assert dispatch.json()["tasks"][0]["delivery_receipt"]["issue_number"] == 42
+
+    update = client.post(
+        f"/api/change/campaigns/{campaign['id']}/tasks/{task_id}",
+        json={"status": "acknowledged", "actor": "affected-owner", "note": "I own this migration"},
+    )
+    assert update.status_code == 200
+    assert update.json()["status"] == "in_progress"
+    fetched = client.get(f"/api/change/campaigns/{campaign['id']}")
+    assert fetched.status_code == 200
+    assert fetched.json()["tasks"][0]["events"][-1]["actor"] == "affected-owner"

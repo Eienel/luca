@@ -5,7 +5,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from app.datahub_mcp import DataHubMcpCatalog
-from app.engine import ConsumerGraphEngine
+from app.engine import LucaEngine
 from app.mcp_client import McpClient
 from app.models import ChangeRequest
 from app.writeback import save_writeback
@@ -102,7 +102,7 @@ def test_streamable_http_datahub_contract_and_change_analysis():
         repository = adapter.load(SOURCE)
         source_id = repository.catalog.assets[0].id
         adapter.enrich_column(repository, source_id, "customer_id")
-        analysis = ConsumerGraphEngine(repository).analyze_change(
+        analysis = LucaEngine(repository).analyze_change(
             ChangeRequest(asset_id=source_id, kind="rename", column="customer_id", new_name="buyer_id")
         )
     finally:
@@ -128,7 +128,7 @@ def test_mcp_writeback_matches_official_save_document_schema(tmp_path, monkeypat
     server = ThreadingHTTPServer(("127.0.0.1", 0), DataHubContractHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    monkeypatch.setenv("CONSUMERGRAPH_MODE", "mcp")
+    monkeypatch.setenv("LUCA_MODE", "mcp")
     monkeypatch.setenv("DATAHUB_MCP_URL", f"http://127.0.0.1:{server.server_port}/mcp")
     analysis = {
         "change": {"asset_id": "customer_360", "column": "customer_id", "kind": "rename"},
@@ -148,7 +148,7 @@ def test_mcp_writeback_matches_official_save_document_schema(tmp_path, monkeypat
     save_call = next(call for call in DataHubContractHandler.calls if call.get("params", {}).get("name") == "save_document")
     arguments = save_call["params"]["arguments"]
     assert arguments["document_type"] == "Decision"
-    assert arguments["content"].startswith("# ConsumerGraph change decision")
+    assert arguments["content"].startswith("# Luca change decision")
     assert arguments["related_assets"] == [SOURCE]
     assert "text" not in arguments
     assert saved["mode"] == "mcp"

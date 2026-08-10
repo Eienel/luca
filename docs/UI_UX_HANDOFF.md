@@ -36,7 +36,7 @@ The interface must make this chain unmistakable:
 
 Do not rebuild these mechanisms in the frontend:
 
-- Deterministic convergence scoring and ConsumerSpec inference.
+- Deterministic convergence scoring and Luca dependency inference.
 - Rename, removal, and type-change analysis.
 - Known-consumer discovery with explicit unknown coverage.
 - Compatibility SQL and executable regression-test generation.
@@ -69,7 +69,7 @@ Show why the dataset matters across the organization:
 This is not customer-record analytics. “Consumer” means an organizational
 consumer of data: a dashboard, dataset, workflow, feature table, or model.
 
-### 3. Show the observed ConsumerSpec
+### 3. Show the observed Luca dependency contract
 
 For each source column, show its observed roles, consumer count, and confidence.
 Make **Evidence, not policy** visible. Query usage and lineage are evidence of a
@@ -207,8 +207,8 @@ setup. Do not make Node a runtime requirement unless the team agrees.
 ## Local setup
 
 ```bash
-git clone https://github.com/Eienel/consumergraph.git
-cd consumergraph
+git clone https://github.com/Eienel/luca.git
+cd luca
 python -m venv .venv
 ```
 
@@ -235,8 +235,8 @@ python scripts/run_local_proof.py
 After accepting the GitHub collaborator invitation:
 
 ```bash
-git clone https://github.com/Eienel/consumergraph.git
-cd consumergraph
+git clone https://github.com/Eienel/luca.git
+cd luca
 git switch -c frontend/ui-ux-redesign
 ```
 

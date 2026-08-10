@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from app.datahub_mcp import DataHubMcpCatalog
-from app.engine import ConsumerGraphEngine
+from app.engine import LucaEngine
 from app.mcp_client import McpClient
 from app.models import ChangeRequest
 from app.writeback import save_writeback
@@ -94,7 +94,7 @@ def main() -> None:
         available = ", ".join(field.name for field in source.columns[:20])
         raise SystemExit(f"Column {args.column!r} was not found. First available fields: {available}")
     adapter.enrich_column(repository, source.id, args.column, max_hops=args.max_hops)
-    analysis = ConsumerGraphEngine(repository).analyze_change(
+    analysis = LucaEngine(repository).analyze_change(
         ChangeRequest(asset_id=source.id, kind="rename", column=args.column, new_name=args.new_name)
     )
     summary = {
@@ -109,7 +109,7 @@ def main() -> None:
         "unknown_coverage": analysis["unknown_coverage"],
     }
     if args.writeback:
-        os.environ["CONSUMERGRAPH_MODE"] = "mcp"
+        os.environ["LUCA_MODE"] = "mcp"
         writeback = save_writeback(analysis, Path("runtime") / "live-validation")
         structured = writeback.get("datahub_result", {}).get("structuredContent", {})
         document_urn = structured.get("urn") if isinstance(structured, dict) else None

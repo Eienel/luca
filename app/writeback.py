@@ -17,7 +17,7 @@ def render_markdown(analysis: dict) -> str:
     change = analysis["change"]
     affected = analysis["known_affected_consumers"]
     lines = [
-        f"# ConsumerGraph change decision: {change['asset_id']}.{change['column']}",
+        f"# Luca change decision: {change['asset_id']}.{change['column']}",
         "",
         f"- Verdict: **{analysis['verdict']}**",
         f"- Severity: **{analysis['severity']}**",
@@ -53,18 +53,18 @@ def render_markdown(analysis: dict) -> str:
 def save_writeback(analysis: dict, runtime_dir: Path) -> dict:
     runtime_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    doc_id = _slug(f"consumergraph-{analysis['change']['asset_id']}-{analysis['change']['column']}-{timestamp}")
+    doc_id = _slug(f"luca-{analysis['change']['asset_id']}-{analysis['change']['column']}-{timestamp}")
     markdown = render_markdown(analysis)
     record = {"id": doc_id, "created_at": timestamp, "markdown": markdown, "analysis": analysis}
     path = runtime_dir / f"{doc_id}.json"
     path.write_text(json.dumps(record, indent=2), encoding="utf-8")
 
-    mode = os.getenv("CONSUMERGRAPH_MODE", "demo").lower()
+    mode = (os.getenv("LUCA_MODE") or os.getenv("CONSUMERGRAPH_MODE", "demo")).lower()
     if mode != "datahub":
         if mode == "mcp":
             url = os.environ.get("DATAHUB_MCP_URL")
             if not url:
-                raise RuntimeError("DATAHUB_MCP_URL is required when CONSUMERGRAPH_MODE=mcp")
+                raise RuntimeError("DATAHUB_MCP_URL is required when LUCA_MODE=mcp")
             result = McpClient(url, token=os.environ.get("DATAHUB_MCP_TOKEN")).call_tool(
                 "save_document",
                 {
@@ -87,13 +87,13 @@ def save_writeback(analysis: dict, runtime_dir: Path) -> dict:
     related_assets = [source_urn] if source_urn else []
     doc = Document.create_document(
         id=doc_id,
-        title=f"ConsumerGraph decision: {analysis['source']['name']}.{analysis['change']['column']}",
+        title=f"Luca decision: {analysis['source']['name']}.{analysis['change']['column']}",
         text=markdown,
         subtype="Runbook",
         related_assets=related_assets,
         custom_properties={
-            "consumergraph.verdict": analysis["verdict"],
-            "consumergraph.severity": analysis["severity"],
+            "luca.verdict": analysis["verdict"],
+            "luca.severity": analysis["severity"],
         },
     )
     client.entities.upsert(doc)

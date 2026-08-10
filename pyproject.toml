@@ -1,7 +1,7 @@
 [project]
-name = "consumergraph"
+name = "luca-changesafe"
 version = "0.2.0"
-description = "Consumer dependency intelligence and safe schema change generation powered by DataHub."
+description = "ChangeSafe by Luca: organizational dependency intelligence and safe schema change generation powered by DataHub."
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115",

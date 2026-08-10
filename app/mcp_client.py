@@ -92,7 +92,7 @@ class McpClient:
             {
                 "protocolVersion": self.protocol_version,
                 "capabilities": {},
-                "clientInfo": {"name": "consumergraph-changesafe", "version": "0.2.0"},
+                "clientInfo": {"name": "luca-changesafe", "version": "0.2.0"},
             },
         )
         if isinstance(result, dict) and result.get("protocolVersion"):

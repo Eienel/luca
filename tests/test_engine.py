@@ -1,14 +1,14 @@
 from pathlib import Path
 
 from app.catalog import CatalogRepository
-from app.engine import ConsumerGraphEngine
+from app.engine import LucaEngine
 from app.models import ChangeRequest
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def engine():
-    return ConsumerGraphEngine(CatalogRepository(ROOT / "data" / "demo_graph.json"))
+    return LucaEngine(CatalogRepository(ROOT / "data" / "demo_graph.json"))
 
 
 def test_convergence_crosses_teams_and_domains():

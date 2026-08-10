@@ -2,7 +2,7 @@
 
 ## Project name
 
-ChangeSafe by ConsumerGraph
+ChangeSafe by Luca
 
 ## One-line description
 
@@ -16,7 +16,7 @@ Metadata-Aware Development
 
 This is the clearest fit because the core user is a developer proposing a schema
 change, and the differentiating mechanism is using DataHub metadata during that
-development workflow. ConsumerGraph's broader agent suite remains the roadmap,
+development workflow. Luca's broader agent suite remains the roadmap,
 not a competing submission claim.
 
 ## Inspiration
@@ -31,7 +31,7 @@ organizational graph. ChangeSafe makes it executable at change-review time.
 
 ChangeSafe reads a shared dataset, its schema, downstream lineage, column-level
 paths, and query examples through DataHub MCP. It builds an evidence-backed
-ConsumerSpec, scores cross-team convergence, and pressure-tests a proposed rename,
+Luca, scores cross-team convergence, and pressure-tests a proposed rename,
 removal, or type change. It then identifies known affected consumers, reports
 unknown coverage, generates compatibility SQL and regression SQL, creates a
 four-file review package, applies that package as a real Git branch and commit,
@@ -73,14 +73,14 @@ check instead of masking those differences.
 The valuable primitive is not another catalog chat interface. It is translating
 organizational metadata into a bounded, observable action while stating what the
 metadata cannot prove. That same primitive can later power incident response,
-training-serving parity, deletion planning, and other ConsumerGraph tools.
+training-serving parity, deletion planning, and other Luca tools.
 
 ## What's next
 
 The next step is a CI check that receives a proposed schema diff directly from a
 pull request, maps it to DataHub URNs, posts the impact summary on the PR, and
 opens the generated compatibility patch for human approval. After proving that
-workflow with users, ConsumerGraph can expand into a suite without diluting the
+workflow with users, Luca can expand into a suite without diluting the
 focused ChangeSafe product.
 
 ## Built with
@@ -90,7 +90,7 @@ HTML, CSS, and JavaScript.
 
 ## Links
 
-- Repository: https://github.com/Eienel/consumergraph
+- Repository: https://github.com/Eienel/luca
 - Live DataHub proof: use the most recent successful `live-datahub` workflow URL
   from the repository Actions page.
 - Demo script: `docs/DEMO.md`

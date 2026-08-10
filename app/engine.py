@@ -28,7 +28,7 @@ def _roles(sql: str, column: str) -> set[str]:
     return roles
 
 
-class ConsumerGraphEngine:
+class LucaEngine:
     def __init__(self, catalog: CatalogRepository):
         self.catalog = catalog
 

@@ -3,7 +3,7 @@ import subprocess
 
 from app.artifacts import write_change_package
 from app.catalog import CatalogRepository
-from app.engine import ConsumerGraphEngine
+from app.engine import LucaEngine
 from app.git_workflow import commit_change_package
 from app.models import ChangeRequest
 
@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_change_package_is_complete_and_reviewable(tmp_path):
-    engine = ConsumerGraphEngine(CatalogRepository(ROOT / "data" / "demo_graph.json"))
+    engine = LucaEngine(CatalogRepository(ROOT / "data" / "demo_graph.json"))
     analysis = engine.analyze_change(
         ChangeRequest(asset_id="customer_360", kind="rename", column="customer_id", new_name="buyer_id")
     )
@@ -31,7 +31,7 @@ def test_change_package_is_complete_and_reviewable(tmp_path):
 
 
 def test_reviewed_package_becomes_a_real_git_commit(tmp_path):
-    engine = ConsumerGraphEngine(CatalogRepository(ROOT / "data" / "demo_graph.json"))
+    engine = LucaEngine(CatalogRepository(ROOT / "data" / "demo_graph.json"))
     analysis = engine.analyze_change(
         ChangeRequest(asset_id="customer_360", kind="rename", column="customer_id", new_name="buyer_id")
     )

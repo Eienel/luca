@@ -12,9 +12,10 @@ submission recording; the generated draft is a ready fallback.
 
 ## 0:00-0:15 - Pain
 
-"A producer's tests can be green while a column rename silently breaks Finance,
-Growth, Support, and an ML model. DataHub knows those organizational consumers;
-ChangeSafe turns that context into a reviewable repair."
+"Luca is an organizational change-intelligence platform, and ChangeSafe is its
+schema-change product. A producer's tests can be green while a column rename
+silently breaks Finance, Growth, Support, and an ML model. DataHub knows those
+organizational consumers; ChangeSafe turns that context into a reviewable repair."
 
 ## 0:15-0:35 - Prove the break
 

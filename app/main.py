@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from .artifacts import change_package_archive, change_package_files, write_change_package
 from .catalog import CatalogRepository
 from .datahub_mcp import DataHubMcpCatalog
-from .engine import ConsumerGraphEngine
+from .engine import LucaEngine
 from .mcp_client import McpClient
 from .models import ChangeRequest, WritebackRequest
 from .writeback import save_writeback
@@ -21,11 +21,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def _runtime_dir() -> Path:
-    configured = os.getenv("CONSUMERGRAPH_RUNTIME_DIR")
+    configured = os.getenv("LUCA_RUNTIME_DIR") or os.getenv("CONSUMERGRAPH_RUNTIME_DIR")
     if configured:
         return Path(configured)
     if os.getenv("VERCEL"):
-        return Path("/tmp/consumergraph-runtime")
+        return Path("/tmp/luca-runtime")
     return ROOT / "runtime"
 
 
@@ -33,11 +33,12 @@ RUNTIME_DIR = _runtime_dir()
 
 
 def _load_catalog() -> tuple[CatalogRepository, str, DataHubMcpCatalog | None]:
-    mode = os.getenv("CONSUMERGRAPH_CATALOG_MODE", "demo").lower()
+    mode = os.getenv("LUCA_CATALOG_MODE") or os.getenv("CONSUMERGRAPH_CATALOG_MODE", "demo")
+    mode = mode.lower()
     if mode == "demo":
         return CatalogRepository(ROOT / "data" / "demo_graph.json"), mode, None
     if mode != "mcp":
-        raise RuntimeError("CONSUMERGRAPH_CATALOG_MODE must be 'demo' or 'mcp'")
+        raise RuntimeError("LUCA_CATALOG_MODE must be 'demo' or 'mcp'")
     url = os.environ.get("DATAHUB_MCP_URL")
     urn = os.environ.get("DATAHUB_SOURCE_URN")
     if not url or not urn:
@@ -48,9 +49,9 @@ def _load_catalog() -> tuple[CatalogRepository, str, DataHubMcpCatalog | None]:
 
 
 catalog, catalog_mode, mcp_adapter = _load_catalog()
-engine = ConsumerGraphEngine(catalog)
+engine = LucaEngine(catalog)
 
-app = FastAPI(title="ChangeSafe by ConsumerGraph", version="0.2.0")
+app = FastAPI(title="ChangeSafe by Luca", version="0.2.0")
 app.mount("/static", StaticFiles(directory=ROOT / "app" / "static"), name="static")
 
 

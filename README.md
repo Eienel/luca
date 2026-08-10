@@ -1,19 +1,19 @@
-# ConsumerGraph
+# Luca
 
-**ChangeSafe uses DataHub's organizational metadata graph to find every known consumer of a proposed schema change, generate a tested compatibility migration, package it for Git review, and record the decision back in DataHub.**
+**ChangeSafe by Luca uses DataHub's organizational metadata graph to find every known consumer of a proposed schema change, generate a tested compatibility migration, package it for Git review, and record the decision back in DataHub.**
 
-ConsumerGraph is the future suite. ChangeSafe is the focused hackathon product.
+Luca is the organizational change-intelligence platform. ChangeSafe is Luca's focused schema-change product.
 
 ![ChangeSafe impact analysis and generated migration](docs/screenshots/02-impact-and-migration.jpg)
 
 The hackathon MVP combines two workflows:
 
-- **ConsumerSpec** infers a dependency contract from lineage, queries, usage, ownership, and cross-domain consumption.
+- **Luca** infers a dependency contract from lineage, queries, usage, ownership, and cross-domain consumption.
 - **ChangeSafe** tests a proposed schema change against that contract, generates compatibility SQL and regression tests, and writes the approved decision back to DataHub.
 
 ## Why it exists
 
-Repository tests know whether producer code works. They usually do not know that Finance, Marketing, Support, and an ML model all depend on the same column. DataHub contains that organizational dependency graph; ConsumerGraph converts it into actionable change protection.
+Repository tests know whether producer code works. They usually do not know that Finance, Marketing, Support, and an ML model all depend on the same column. DataHub contains that organizational dependency graph; Luca converts it into actionable change protection.
 
 ## Current vertical slice
 
@@ -43,7 +43,7 @@ uvicorn app.main:app --reload
 
 Open <http://localhost:8000>.
 
-The default `CONSUMERGRAPH_CATALOG_MODE=demo` requires no DataHub instance or paid API.
+The default `LUCA_CATALOG_MODE=demo` requires no DataHub instance or paid API.
 
 ## Vercel preview
 
@@ -60,8 +60,8 @@ ChangeSafe uses the official read tools `get_entities`, `list_schema_fields`,
 write-back when mutations are enabled.
 
 ```bash
-CONSUMERGRAPH_CATALOG_MODE=mcp
-CONSUMERGRAPH_MODE=mcp
+LUCA_CATALOG_MODE=mcp
+LUCA_MODE=mcp
 DATAHUB_MCP_URL=https://your-tenant.acryl.io/integrations/ai/mcp/
 DATAHUB_MCP_TOKEN=<service-account-token>
 DATAHUB_SOURCE_URN=urn:li:dataset:(urn:li:dataPlatform:snowflake,analytics.customer_360,PROD)
@@ -83,7 +83,7 @@ and performs no mutation.
 
 ### Verified live OSS proof
 
-The [`live-datahub` workflow](https://github.com/Eienel/consumergraph/actions/runs/31136996090)
+The [`live-datahub` workflow](https://github.com/Eienel/luca/actions/runs/31136996090)
 completed successfully against DataHub OSS 1.7.0 and the official MCP server. It
 loaded four schema fields and ten downstream consumers for `logging_events`,
 traced `event_data` to `fct_users_created.user_name`, returned
@@ -106,12 +106,12 @@ pip install -e ".[datahub,dev]"
 Configure:
 
 ```bash
-CONSUMERGRAPH_MODE=datahub
+LUCA_MODE=datahub
 DATAHUB_GMS_URL=http://localhost:8080
 DATAHUB_GMS_TOKEN=<personal-access-token>
 ```
 
-When a migration is approved, ConsumerGraph uses `DataHubClient` and `Document.create_document(...)` to publish the decision, generated SQL, tests, affected owners, confidence, and coverage warning. The document is linked to the source dataset when its URN is available.
+When a migration is approved, Luca uses `DataHubClient` and `Document.create_document(...)` to publish the decision, generated SQL, tests, affected owners, confidence, and coverage warning. The document is linked to the source dataset when its URN is available.
 
 For a rich local catalog, load the official showcase datapack:
 
@@ -142,7 +142,7 @@ python scripts/run_local_proof.py
 
 The local proof uses a dbt-shaped project and Python's built-in SQLite engine, so it
 needs no warehouse, paid API, or Docker. It first proves that renaming
-`customer_id` to `buyer_id` breaks four downstream models, then runs ConsumerGraph,
+`customer_id` to `buyer_id` breaks four downstream models, then runs Luca,
 applies its generated compatibility view, and proves every model works again.
 
 The fixture is intentionally small enough to audit line by line. The full local

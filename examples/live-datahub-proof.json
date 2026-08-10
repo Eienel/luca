@@ -1,5 +1,5 @@
 {
-  "workflow_run": "https://github.com/Eienel/consumergraph/actions/runs/31136996090",
+  "workflow_run": "https://github.com/Eienel/luca/actions/runs/31136996090",
   "datahub_oss_version": "1.7.0",
   "source": {
     "urn": "urn:li:dataset:(urn:li:dataPlatform:hive,logging_events,PROD)",

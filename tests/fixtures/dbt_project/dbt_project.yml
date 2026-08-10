@@ -1,9 +1,9 @@
-name: consumergraph_change_proof
+name: luca_change_proof
 version: "1.0.0"
 config-version: 2
-profile: consumergraph_change_proof
+profile: luca_change_proof
 model-paths: ["models"]
 
 models:
-  consumergraph_change_proof:
+  luca_change_proof:
     +materialized: view

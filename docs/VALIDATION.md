@@ -2,12 +2,12 @@
 
 ## Verdict
 
-**The underlying pain is real; ConsumerGraph's exact last-mile solution is
+**The underlying pain is real; Luca's exact last-mile solution is
 promising but not yet user-validated.**
 
 The proven problem is that a producer can rename, remove, or retype a column
 without knowing every downstream team, dashboard, pipeline, or model that will
-break. The narrower ConsumerGraph hypothesis is that impact reports are not
+break. The narrower Luca hypothesis is that impact reports are not
 enough: teams also need an executable compatibility plan, regression tests, and
 a durable record of the migration decision.
 
@@ -30,7 +30,7 @@ a durable record of the migration decision.
   <https://github.com/dbt-labs/dbt-core/issues/4144>.
 
 These sources validate the category of pain. They do **not** prove that teams
-want ConsumerGraph's generated migration workflow, or that they would adopt it
+want Luca's generated migration workflow, or that they would adopt it
 instead of dbt versions, handwritten compatibility views, or existing internal
 processes.
 
@@ -42,7 +42,7 @@ real SQL engine:
 1. Build `customer_360` with `customer_id` and four downstream dbt-style models.
 2. Rename the producer column to `buyer_id`.
 3. Confirm the downstream build fails with `no such column: customer_id`.
-4. Run ConsumerGraph's deterministic impact analysis.
+4. Run Luca's deterministic impact analysis.
 5. Confirm all four consumers are identified.
 6. Apply the generated compatibility view.
 7. Re-run every consumer and confirm they pass with zero alias mismatches.
@@ -60,7 +60,7 @@ on a 16 GB public GitHub-hosted runner, described below.
 
 ## Live DataHub OSS proof
 
-[Workflow run 31136996090](https://github.com/Eienel/consumergraph/actions/runs/31136996090)
+[Workflow run 31136996090](https://github.com/Eienel/luca/actions/runs/31136996090)
 completed against DataHub OSS 1.7.0. It started the real Quickstart stack,
 ingested DataHub's official sample metadata, launched the official
 `mcp-server-datahub` package over Streamable HTTP, and executed ChangeSafe.
@@ -97,7 +97,7 @@ on August 7, 2026: the UI was public, while `/api/gms/config` and
 1. Show five data engineers the generated impact plan and ask what they would
    still do manually before merging the change.
 2. Import `showcase-ecommerce`, select one column with cross-tool lineage, and
-   compare ConsumerGraph's affected set with DataHub's native impact view.
+   compare Luca's affected set with DataHub's native impact view.
 3. Ask two teams to bring a recent breaking schema migration and reconstruct
    whether generated compatibility SQL would have reduced work or risk.
 

@@ -6,7 +6,7 @@ import sqlite3
 from pathlib import Path
 
 from app.catalog import CatalogRepository
-from app.engine import ConsumerGraphEngine
+from app.engine import LucaEngine
 from app.models import Asset, Catalog, ChangeRequest, Column, Edge
 
 
@@ -110,7 +110,7 @@ def run_proof() -> dict:
     if broken_error is None:
         raise AssertionError("The rename scenario did not break a downstream consumer")
 
-    engine = ConsumerGraphEngine(_catalog())
+    engine = LucaEngine(_catalog())
     analysis = engine.analyze_change(
         ChangeRequest(
             asset_id="customer_360",
@@ -135,7 +135,7 @@ def run_proof() -> dict:
     return {
         "baseline": {"status": "pass", "row_counts": baseline_counts},
         "breaking_change": {"status": "failed_as_expected", "error": broken_error},
-        "consumergraph": {
+        "luca": {
             "verdict": analysis["verdict"],
             "affected_consumers": [item["id"] for item in analysis["known_affected_consumers"]],
             "generated_compatibility_sql": analysis["generated"]["compatibility_sql"],

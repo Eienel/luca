@@ -6,7 +6,7 @@ build or output directory is required.
 
 ## Connect the repository
 
-1. Import `Eienel/consumergraph` into Vercel.
+1. Import `Eienel/luca` into Vercel.
 2. Leave Framework Preset, Build Command, Output Directory, and Install Command at
    their automatically detected defaults.
 3. Deploy the UI branch for preview, then switch the production branch to `main`
@@ -22,8 +22,8 @@ files are ephemeral and are not a substitute for DataHub write-back.
 Set these only when deploying against a private DataHub tenant:
 
 ```text
-CONSUMERGRAPH_CATALOG_MODE=mcp
-CONSUMERGRAPH_MODE=mcp
+LUCA_CATALOG_MODE=mcp
+LUCA_MODE=mcp
 DATAHUB_MCP_URL=https://your-tenant.acryl.io/integrations/ai/mcp/
 DATAHUB_MCP_TOKEN=<service-account-token>
 DATAHUB_SOURCE_URN=<dataset-urn>

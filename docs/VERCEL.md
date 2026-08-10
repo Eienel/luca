@@ -1,5 +1,7 @@
 # Vercel deployment
 
+The deployment is live at <https://useluca.vercel.app>.
+
 ChangeSafe remains one FastAPI application. `app/index.py` is the Vercel-supported
 ASGI entrypoint and re-exports the same `app` used locally. No separate frontend
 build or output directory is required.

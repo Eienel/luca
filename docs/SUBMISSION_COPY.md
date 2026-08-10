@@ -31,7 +31,7 @@ organizational graph. ChangeSafe makes it executable at change-review time.
 
 ChangeSafe reads a shared dataset, its schema, downstream lineage, column-level
 paths, and query examples through DataHub MCP. It builds an evidence-backed
-Luca, scores cross-team convergence, and pressure-tests a proposed rename,
+dependency contract, scores cross-team convergence, and pressure-tests a rename,
 removal, or type change. It then identifies known affected consumers, reports
 unknown coverage, generates compatibility SQL and regression SQL, creates a
 four-file review package, applies that package as a real Git branch and commit,
@@ -90,10 +90,18 @@ HTML, CSS, and JavaScript.
 
 ## Links
 
-- Repository: https://github.com/Eienel/luca
-- Live DataHub proof: use the most recent successful `live-datahub` workflow URL
-  from the repository Actions page.
-- Demo script: `docs/DEMO.md`
+Order these as they should appear on Devpost:
+
+1. Live demo: https://useluca.vercel.app
+2. Repository: https://github.com/Eienel/luca
+3. Live DataHub proof:
+   https://github.com/Eienel/luca/actions/runs/31136996090
+
+The live demo runs in `demo` catalog mode, so it needs no credentials. Package
+and receipt artifacts written there are ephemeral; durable decisions still belong
+in DataHub.
+
+Demo script: `docs/DEMO.md`
 
 ## Truthful demo claims
 

@@ -4,11 +4,30 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="ChangeSafe turns DataHub dependency evidence into reviewable, tested schema migrations.">
-  <title>ChangeSafe — DataHub-aware schema migrations</title>
+  <meta property="og:title" content="ChangeSafe by ConsumerGraph">
+  <meta property="og:description" content="See who a data change affects before it breaks them.">
+  <meta property="og:image" content="/static/changesafe-hands.png">
+  <link rel="preload" href="/static/changesafe-hands.png" as="image">
+  <title>ChangeSafe - DataHub-aware schema migrations</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
   <a class="skip-link" href="#workspace">Skip to workspace</a>
+
+  <section id="hero" class="hero-scroll" aria-labelledby="hero-title">
+    <div class="hero-sticky">
+      <div class="hero-art" aria-hidden="true">
+        <div class="hero-half hero-half-left"><img class="hero-hand hero-hand-left" src="/static/changesafe-hands.png" alt=""></div>
+        <div class="hero-half hero-half-right"><img class="hero-hand hero-hand-right" src="/static/changesafe-hands.png" alt=""></div>
+      </div>
+      <div class="hero-reveal">
+        <p class="hero-kicker">ORGANIZATIONAL CHANGE INTELLIGENCE</p>
+        <h1 id="hero-title">ChangeSafe</h1>
+        <p class="hero-tagline">See who a data change affects before it breaks them.</p>
+        <a class="hero-enter" href="#workspace">Enter the workspace <span aria-hidden="true">&darr;</span></a>
+      </div>
+    </div>
+  </section>
 
   <header class="topbar">
     <a class="brand" href="/" aria-label="ChangeSafe home">
@@ -27,26 +46,23 @@
   <main id="workspace">
     <section class="intro" aria-labelledby="page-title">
       <div>
-        <p class="eyebrow">ORGANIZATIONAL CHANGE INTELLIGENCE</p>
-        <h1 id="page-title">Know what breaks.<br><span>Ship the repair.</span></h1>
+        <h2 id="page-title" class="workspace-title">Know what breaks.<br><span>Ship the repair.</span></h2>
       </div>
-      <p class="intro-copy">Repository tests see producer code. ChangeSafe reads DataHub’s organizational graph to expose every <em>known</em> downstream dependency, generate a compatibility migration, and leave a reviewed decision behind.</p>
+      <p class="intro-copy">Repository tests see producer code. ChangeSafe reads DataHub’s organizational graph, exposes known downstream dependencies, generates a compatibility migration, and records the reviewed decision.</p>
     </section>
 
     <ol class="flow" aria-label="ChangeSafe workflow">
-      <li class="active"><span>01</span>Context</li>
-      <li><span>02</span>Impact</li>
-      <li><span>03</span>Repair</li>
-      <li><span>04</span>Review</li>
-      <li><span>05</span>Record</li>
+      <li class="active">Context</li>
+      <li>Impact</li>
+      <li>Repair</li>
+      <li>Review</li>
+      <li>Record</li>
     </ol>
 
     <div id="global-error" class="banner banner-error hidden" role="alert"></div>
 
     <section class="source-panel panel" aria-labelledby="source-title">
-      <div class="section-number" aria-hidden="true">01</div>
       <div class="source-copy">
-        <p class="eyebrow muted">SOURCE CONTEXT</p>
         <h2 id="source-title">Choose the shared asset</h2>
         <p>DataHub provides lineage, query evidence, ownership, and domain context.</p>
       </div>
@@ -55,7 +71,7 @@
         <select id="asset-select" aria-describedby="asset-details"></select>
       </label>
       <button id="discover-button" class="button button-primary" type="button">
-        <span>Trace organizational impact</span><b aria-hidden="true">→</b>
+        <span>Trace organizational impact</span>
       </button>
       <div id="asset-details" class="asset-details" aria-live="polite"></div>
     </section>
@@ -63,17 +79,17 @@
     <section id="overview" class="overview hidden" aria-labelledby="overview-title" aria-busy="false">
       <article class="score-panel panel">
         <div class="section-head compact">
-          <div><p class="eyebrow muted">CONVERGENCE</p><h2 id="overview-title">Organizational blast radius</h2></div>
-          <span id="risk" class="severity-badge">—</span>
+          <div><h2 id="overview-title">Organizational blast radius</h2></div>
+          <span id="risk" class="severity-badge">Pending</span>
         </div>
         <div class="score-wrap">
           <div class="score"><span id="score">0</span><small>/100</small></div>
-          <p>Cross-team and cross-domain dependency—not simple query popularity.</p>
+          <p>Cross-team and cross-domain dependency, not simple query popularity.</p>
         </div>
       </article>
       <article class="reach-panel panel">
         <div class="section-head compact">
-          <div><p class="eyebrow muted">DATAHUB EVIDENCE</p><h2>Known organizational reach</h2></div>
+          <div><h2>Known organizational reach</h2></div>
           <span class="evidence-tag"><i aria-hidden="true"></i>Graph-derived</span>
         </div>
         <div id="metrics" class="metrics"></div>
@@ -83,9 +99,8 @@
     <section id="consumer-section" class="panel hidden" aria-labelledby="consumer-title">
       <div class="section-head">
         <div>
-          <p class="eyebrow muted">02 · CONSUMER MAP</p>
           <h2 id="consumer-title">Where dependencies converge</h2>
-          <p class="section-description">Organizational consumers—not business-customer records.</p>
+          <p class="section-description">Organizational consumers, not business-customer records.</p>
         </div>
         <span id="consumer-count" class="count-pill"></span>
       </div>
@@ -99,7 +114,6 @@
     <section id="contract-section" class="panel hidden" aria-labelledby="contract-title">
       <div class="section-head">
         <div>
-          <p class="eyebrow muted">03 · CONSUMERSPEC</p>
           <h2 id="contract-title">Observed dependency contract</h2>
           <p class="section-description">What downstream behavior suggests about each source column.</p>
         </div>
@@ -114,11 +128,10 @@
     <section id="change-section" class="change-panel panel hidden" aria-labelledby="change-title">
       <div class="section-head">
         <div>
-          <p class="eyebrow muted">04 · CHANGESAFE</p>
           <h2 id="change-title">Pressure-test a schema change</h2>
           <p class="section-description">The verdict is deterministic. Generated code still requires human review.</p>
         </div>
-        <span class="human-gate"><i aria-hidden="true">◆</i> Human gate required</span>
+        <span class="human-gate">Human gate required</span>
       </div>
       <form id="change-form" class="change-form">
         <label class="field"><span>Change type</span>
@@ -130,13 +143,13 @@
         </label>
         <label class="field"><span>Source column</span><select id="column-select"></select></label>
         <label id="new-value-label" class="field"><span>New name</span><input id="new-value" value="buyer_id" required autocomplete="off"></label>
-        <button id="analyze-button" class="button button-primary" type="submit"><span>Analyze impact</span><b aria-hidden="true">→</b></button>
+        <button id="analyze-button" class="button button-primary" type="submit"><span>Analyze impact</span></button>
       </form>
       <div id="analysis" class="analysis hidden" aria-live="polite"></div>
     </section>
 
     <footer>
-      <p><strong>ChangeSafe</strong> reads organizational metadata—not raw customer records.</p>
+      <p><strong>ChangeSafe</strong> reads organizational metadata, not raw customer records.</p>
       <p>Known coverage is explicit. Human review is mandatory.</p>
     </footer>
   </main>

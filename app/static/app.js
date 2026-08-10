@@ -11,6 +11,55 @@ const escapeHtml = (value) => String(value).replace(
   (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
 );
 
+function initializeHero() {
+  const hero = $("hero");
+  const stage = hero?.querySelector(".hero-sticky");
+  if (!hero || !stage) return;
+
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let active = false;
+  let frame;
+
+  const clamp = (value, minimum = 0, maximum = 1) => Math.min(maximum, Math.max(minimum, value));
+
+  function paintHero() {
+    if (reducedMotion.matches) return;
+
+    const rect = hero.getBoundingClientRect();
+    const scrollDistance = Math.max(1, hero.offsetHeight - window.innerHeight);
+    const progress = clamp(-rect.top / scrollDistance);
+    const compact = window.innerWidth <= 680;
+    // Keep each hand visible as an edge anchor after the title is revealed.
+    const travel = progress * (compact ? 8 : 18);
+    const scale = 1 + progress * .045;
+    const reveal = compact
+      ? clamp((progress - .55) / .35)
+      : clamp((progress - .42) / .38);
+    stage.style.setProperty("--left-shift", `${-travel}vw`);
+    stage.style.setProperty("--right-shift", `${travel}vw`);
+    stage.style.setProperty("--hand-scale", scale.toFixed(3));
+    stage.style.setProperty("--title-opacity", reveal.toFixed(3));
+    stage.style.setProperty("--title-y", `${((1 - reveal) * 28).toFixed(1)}px`);
+  }
+
+  function animateVisibleHero() {
+    if (!active || reducedMotion.matches) return;
+    paintHero();
+    frame = window.requestAnimationFrame(animateVisibleHero);
+  }
+
+  const observer = new IntersectionObserver(([entry]) => {
+    active = entry.isIntersecting;
+    window.cancelAnimationFrame(frame);
+    if (active) animateVisibleHero();
+  });
+
+  observer.observe(hero);
+  window.addEventListener("resize", paintHero);
+  reducedMotion.addEventListener?.("change", paintHero);
+  paintHero();
+}
+
 async function json(url, options) {
   const response = await fetch(url, options);
   let data;
@@ -153,14 +202,14 @@ function renderAnalysis(analysis) {
   $("analysis").innerHTML = `
     <div class="analysis-layout">
       <article class="result-card">
-        <div class="result-heading"><p class="eyebrow muted">IMPACT VERDICT</p><span class="severity-badge" data-level="${escapeHtml(analysis.severity)}">${escapeHtml(analysis.severity)} risk</span></div>
+        <div class="result-heading"><p class="result-label">Impact verdict</p><span class="severity-badge" data-level="${escapeHtml(analysis.severity)}">${escapeHtml(analysis.severity)} risk</span></div>
         <h3 class="verdict-name">${escapeHtml(verdict)}</h3>
         <p class="verdict-summary">${affected.length} known consumer${affected.length === 1 ? "" : "s"} depend on this column across the captured organizational graph.</p>
         <ul class="affected-list">${affected.map((item) => `<li><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.owner)}<br>${escapeHtml(item.domain)}</span></li>`).join("") || "<li><strong>No known affected consumers</strong><span>Coverage may still be incomplete</span></li>"}</ul>
-        <p class="coverage-warning"><span aria-hidden="true">△</span><span><strong>Unknown coverage remains.</strong><br>${escapeHtml(analysis.unknown_coverage)}</span></p>
+        <p class="coverage-warning"><span><strong>Unknown coverage remains.</strong><br>${escapeHtml(analysis.unknown_coverage)}</span></p>
       </article>
       <article class="result-card">
-        <div class="result-heading"><div><p class="eyebrow muted">GENERATED REPAIR</p><h3>Reviewable migration package</h3></div></div>
+        <div class="result-heading"><div><p class="result-label">Generated repair</p><h3>Reviewable migration package</h3></div></div>
         <div class="code-tabs" role="tablist" aria-label="Generated code">
           <button class="code-tab active" type="button" role="tab" aria-selected="true" data-panel="migration-panel">Compatibility SQL</button>
           <button class="code-tab" type="button" role="tab" aria-selected="false" data-panel="test-panel">Regression test</button>
@@ -168,7 +217,7 @@ function renderAnalysis(analysis) {
         ${codePanel("migration-panel", "Compatibility SQL", analysis.generated.compatibility_sql, true)}
         ${codePanel("test-panel", "Regression test", analysis.generated.regression_tests, false)}
         <div class="action-bar">
-          <button id="package-button" class="button button-primary" type="button"><span>Generate review package</span><b aria-hidden="true">→</b></button>
+          <button id="package-button" class="button button-primary" type="button"><span>Generate review package</span></button>
           <button id="writeback-button" class="button button-secondary" type="button"><span>Approve & record</span></button>
         </div>
         <p class="review-note">Generates four review files. ChangeSafe never merges autonomously.</p>
@@ -278,4 +327,5 @@ $("discover-button").addEventListener("click", discover);
 $("change-kind").addEventListener("change", syncChangeFields);
 $("change-form").addEventListener("submit", analyzeChange);
 syncChangeFields();
+initializeHero();
 loadAssets();

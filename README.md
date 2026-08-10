@@ -4,6 +4,9 @@
 
 Luca is the organizational change-intelligence platform. ChangeSafe is Luca's focused schema-change product.
 
+**Live demo: <https://useluca.vercel.app>** — runs in demo mode, so it needs no
+DataHub instance, credentials, or paid API.
+
 ![ChangeSafe impact analysis and generated migration](docs/screenshots/02-impact-and-migration.jpg)
 
 The hackathon MVP combines two workflows:

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0B0E14">
+<title>BlueTerm</title></head><body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<style>
+  :root{
+    --bg:#0B0E14; --panel:#11151F; --line:#1E2430;
+    --fg:#C8CED9; --dim:#5C6773; --amber:#FFB454; --amber-soft:#3A2E1A;
+    --ok:#7FD962; --err:#F26D78; --user:#73B8FF;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:var(--mono); font-size:13.5px; line-height:1.55;
+    display:flex; flex-direction:column; height:100dvh; overflow:hidden;
+  }
+  header{
+    flex:none; display:flex; align-items:center; gap:10px;
+    padding:10px 14px; background:var(--panel); border-bottom:1px solid var(--line);
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
+  .dot.off{background:var(--err)}
+  .brand{font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px;color:var(--amber)}
+  .hstat{margin-left:auto;display:flex;gap:14px;font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden}
+  .hstat b{color:var(--fg);font-weight:500}
+  #modelBtn{background:none;border:1px solid var(--line);color:var(--amber);font:inherit;font-size:11px;
+    padding:3px 8px;border-radius:4px;max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+  #modelBtn:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+  main{flex:1;overflow-y:auto;padding:14px 14px 8px;-webkit-overflow-scrolling:touch}
+  .msg{margin:0 0 14px;white-space:pre-wrap;word-break:break-word}
+  .msg .p{user-select:none}
+  .u .p{color:var(--user);font-weight:700}
+  .a .p{color:var(--amber);font-weight:700}
+  .sys{color:var(--dim)}
+  .errm{color:var(--err)}
+  .meta{font-size:11px;color:var(--dim);margin-top:2px}
+  .cursor{display:inline-block;width:7px;height:14px;background:var(--amber);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  @media (prefers-reduced-motion:reduce){.cursor{animation:none}}
+  footer{flex:none;background:var(--panel);border-top:1px solid var(--line);padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
+  .row{display:flex;gap:8px;align-items:flex-end}
+  .ps1{color:var(--amber);font-weight:700;padding:8px 0;flex:none}
+  textarea{
+    flex:1;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;
+    font:inherit;padding:8px 10px;resize:none;min-height:38px;max-height:120px}
+  #send{background:var(--amber);color:#0B0E14;border:0;border-radius:6px;font:inherit;font-weight:700;
+    padding:8px 14px;flex:none;cursor:pointer}
+  #send:disabled{background:var(--amber-soft);color:var(--dim)}
+  dialog{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;
+    font-family:var(--mono);max-width:min(92vw,420px);width:100%;padding:0;max-height:70dvh}
+  dialog::backdrop{background:rgba(0,0,0,.6)}
+  dialog h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--amber);margin:0;
+    padding:12px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel)}
+  #modelList{overflow-y:auto;max-height:calc(70dvh - 44px)}
+  .mrow{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);
+    color:var(--fg);font:inherit;font-size:12.5px;padding:11px 14px;cursor:pointer}
+  .mrow.sel{color:var(--amber);background:var(--amber-soft)}
+</style>
+
+<header>
+  <span class="dot off" id="dot"></span>
+  <span class="brand">blueterm</span>
+  <div class="hstat">
+    <button id="modelBtn" type="button">model…</button>
+    <span id="spend">$ --</span>
+  </div>
+</header>
+<main id="log" aria-live="polite"></main>
+<footer>
+  <div class="row">
+    <span class="ps1">❯</span>
+    <textarea id="in" rows="1" placeholder="message or /help" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send"></textarea>
+    <button id="send" type="button">run</button>
+  </div>
+</footer>
+<dialog id="modelDlg"><h2>select model</h2><div id="modelList"></div></dialog>
+
+<script>
+const API='https://api.bluesminds.com/v1';
+const $=id=>document.getElementById(id);
+const log=$('log'), input=$('in'), sendBtn=$('send'), dlg=$('modelDlg');
+let key=null, model=null, history=[], busy=false, models=[];
+try{key=localStorage.getItem('bm_key'); model=localStorage.getItem('bm_model')||'gpt-4o';}catch(e){model='gpt-4o'}
+$('modelBtn').textContent=model||'model…';
+
+function line(cls,prefix,text){
+  const d=document.createElement('div'); d.className='msg '+cls;
+  if(prefix){const p=document.createElement('span');p.className='p';p.textContent=prefix+' ';d.appendChild(p);}
+  d.appendChild(document.createTextNode(text||''));
+  log.appendChild(d); log.scrollTop=log.scrollHeight; return d;
+}
+const sys=t=>line('sys','·',t), err=t=>line('errm','!',t);
+
+function saveKey(k){key=k;try{localStorage.setItem('bm_key',k)}catch(e){} $('dot').className='dot'; sys('key saved on this device. type a message to chat, /help for commands.'); refreshSpend(); loadModels();}
+
+async function api(path,opts={}){
+  const r=await fetch(API+path,{...opts,headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json',...(opts.headers||{})}});
+  if(!r.ok){let t='';try{t=(await r.text()).slice(0,300)}catch(e){} throw new Error(r.status+' '+t);}
+  return r;
+}
+async function refreshSpend(){
+  try{const d=await (await api('/dashboard/billing/usage')).json();
+    $('spend').innerHTML='used <b>$'+(d.total_usage/100).toFixed(4)+'</b>';
+  }catch(e){$('spend').textContent='$ ?'}
+}
+async function loadModels(){
+  try{const d=await (await api('/models')).json();
+    models=d.data.map(m=>m.id).sort();
+    const list=$('modelList'); list.innerHTML='';
+    for(const id of models){
+      const b=document.createElement('button'); b.type='button';
+      b.className='mrow'+(id===model?' sel':''); b.textContent=id;
+      b.onclick=()=>{setModel(id); dlg.close();};
+      list.appendChild(b);
+    }
+  }catch(e){err('could not load models: '+e.message)}
+}
+function setModel(id){model=id;try{localStorage.setItem('bm_model',id)}catch(e){}
+  $('modelBtn').textContent=id; sys('model → '+id);
+  [...document.querySelectorAll('.mrow')].forEach(b=>b.classList.toggle('sel',b.textContent===id));
+}
+$('modelBtn').onclick=()=>{if(!key)return err('set your key first: /key sk-...'); dlg.showModal();};
+dlg.onclick=e=>{if(e.target===dlg)dlg.close()};
+
+async function chat(text){
+  history.push({role:'user',content:text});
+  const d=line('a','ai>','');
+  const cur=document.createElement('span'); cur.className='cursor'; d.appendChild(cur);
+  busy=true; sendBtn.disabled=true;
+  let full='';
+  try{
+    const r=await api('/chat/completions',{method:'POST',body:JSON.stringify({model,messages:history,stream:true})});
+    const reader=r.body.getReader(); const dec=new TextDecoder(); let buf='';
+    while(true){
+      const {done,value}=await reader.read(); if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n'); buf=lines.pop();
+      for(const l of lines){
+        const s=l.trim(); if(!s.startsWith('data:'))continue;
+        const p=s.slice(5).trim(); if(p==='[DONE]')continue;
+        try{const j=JSON.parse(p); const t=j.choices?.[0]?.delta?.content;
+          if(t){full+=t; cur.before(document.createTextNode(t)); log.scrollTop=log.scrollHeight;}
+        }catch(e){}
+      }
+    }
+    history.push({role:'assistant',content:full});
+    refreshSpend();
+  }catch(e){
+    history.pop(); err('request failed: '+e.message);
+  }finally{cur.remove(); busy=false; sendBtn.disabled=false;}
+}
+
+const HELP=[
+ '/key sk-...   save your API key (stored only in this browser)',
+ '/model        pick a model    /model <id> sets it directly',
+ '/usage        show credit spent so far',
+ '/clear        clear screen and conversation memory',
+ '/help         this list',
+ 'anything else is sent to the model (conversation is remembered until /clear)'
+].join('\n');
+
+function handle(text){
+  if(text.startsWith('/')){
+    const [cmd,...rest]=text.split(/\s+/); const arg=rest.join(' ');
+    line('u','❯',text);
+    if(cmd==='/key'&&arg)return saveKey(arg);
+    if(cmd==='/help')return sys(HELP);
+    if(cmd==='/clear'){history=[];log.innerHTML='';return sys('cleared.');}
+    if(cmd==='/model'){if(!arg)return $('modelBtn').click(); if(models.length&&!models.includes(arg))sys('note: "'+arg+'" not in /models list, trying anyway'); return setModel(arg);}
+    if(cmd==='/usage'){return refreshSpend().then(()=>sys('usage refreshed (see top right — of your $100 credit).'));}
+    return err('unknown command. /help');
+  }
+  if(!key){line('u','❯',text);return err('no key set. run: /key sk-yourkeyhere');}
+  line('u','❯',text); chat(text);
+}
+
+function submit(){
+  const t=input.value.trim(); if(!t||busy)return;
+  input.value=''; input.style.height='auto'; handle(t);
+}
+sendBtn.onclick=submit;
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit();}});
+input.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(input.scrollHeight,120)+'px';});
+
+sys('blueterm — bluesminds api console');
+if(key){$('dot').className='dot'; sys('key loaded · model '+model+' · type /help for commands'); refreshSpend(); loadModels();}
+else sys('paste your key to begin:  /key sk-yourkeyhere');
+</script>
+</body></html>

@@ -75,7 +75,7 @@
 
 <header>
   <span class="dot off" id="dot"></span>
-  <span class="brand">blueterm</span><span id="ver" style="font-size:10px;color:var(--dim)">v3</span>
+  <span class="brand">blueterm</span><span id="ver" style="font-size:10px;color:var(--dim)">v5</span>
   <div class="hstat">
     <button id="chatsBtn" class="hbtn" type="button" title="saved chats" aria-label="saved chats">&#9776;</button>
     <button id="modelBtn" class="hbtn" type="button">model&#8230;</button>
@@ -196,7 +196,10 @@ modelDlg.onclick=e=>{if(e.target===modelDlg)modelDlg.close()};
 /* ---------- api ---------- */
 async function api(path,opts={}){
   const r=await fetch(API+path,{...opts,headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json',...(opts.headers||{})}});
-  if(!r.ok){let t='';try{t=(await r.text()).slice(0,300)}catch(e){} throw new Error(r.status+' '+t);}
+  if(!r.ok){
+    let t=''; try{t=(await r.text()).slice(0,200)}catch(e){}
+    const e=new Error(r.status+' '+t); e.status=r.status; throw e;
+  }
   return r;
 }
 async function refreshSpend(){
@@ -255,9 +258,15 @@ function guard(){
 function friendly(e){
   const m=String(e&&e.message||e);
   if(stoppedByUser) return 'stopped.';
-  if(/abort|timeout|timed out|504|502|Gateway/i.test(m)){
-    const alt = model==='gpt-4o' ? 'gpt-5.5' : 'gpt-4o';
-    return 'no answer from "'+model+'" — that model looks down right now. try /model '+alt+' (or tap the model name up top), then send again.';
+  if(/^(504|502)\b/.test(m)||/Gateway Time-?out/i.test(m)){
+    return model==='gpt-4o'
+      ? 'the API cut this off at its 60s limit. ask something shorter, or start a fresh chat with /new — long chats take longer each time.'
+      : '"'+model+'" took longer than the 60s the API allows. it is a slow model — try /model gpt-4o, which answers in about 5s.';
+  }
+  if(/abort|timeout|timed out/i.test(m)){
+    return model==='gpt-4o'
+      ? 'no answer in time — the connection stalled. send it again.'
+      : 'no answer from "'+model+'" — it looks down right now. try /model gpt-4o (or tap the model name up top), then send again.';
   }
   if(/401|403/.test(m)) return 'the API rejected your key. re-enter it with /key sk-...';
   if(/429/.test(m)) return 'rate limited — wait a few seconds and try again.';
@@ -272,53 +281,84 @@ function setBusy(on){
   sendBtn.style.border=on?'1px solid var(--line)':'';
 }
 
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
 async function chat(text){
   let c=cur(); if(!c) c=newChat(true);
   c.messages.push({role:'user',content:text}); touch();
   const d=line('a','ai>','');
   const cursor=document.createElement('span'); cursor.className='cursor'; d.appendChild(cursor);
+  const clock=document.createElement('span'); clock.className='sys'; clock.style.fontSize='11px'; d.appendChild(clock);
+  const t0=Date.now(); let note='thinking';
+  const tick=setInterval(()=>{ if(!clock.isConnected)return;
+    const el=Math.round((Date.now()-t0)/1000);
+    clock.textContent=' '+note+'… '+el+'s'+(el>25?' (tap stop to cancel)':''); },1000);
+  const stopClock=()=>{clearInterval(tick); clock.remove();};
+
   stoppedByUser=false; setBusy(true);
   const g=guard(); abortCtl=g.ac;
-  let full='';
+  let full='', fail=null;
+
   try{
-    try{
-      if(!window.ReadableStream) throw new Error('no-stream');
-      const r=await api('/chat/completions',{method:'POST',signal:g.signal,body:JSON.stringify({model,messages:c.messages,stream:true})});
-      if(!r.body) throw new Error('no-stream');
-      const reader=r.body.getReader(); const dec=new TextDecoder(); let buf='';
-      while(true){
-        const {done,value}=await reader.read(); if(done)break;
-        g.bump();
-        buf+=dec.decode(value,{stream:true});
-        const lines=buf.split('\n'); buf=lines.pop();
-        for(const l of lines){
-          const s=l.trim(); if(!s.startsWith('data:'))continue;
-          const p=s.slice(5).trim(); if(p==='[DONE]')continue;
-          try{const j=JSON.parse(p); const t=j.choices?.[0]?.delta?.content;
-            if(t){full+=t; cursor.before(document.createTextNode(t)); log.scrollTop=log.scrollHeight;}
-          }catch(e){}
+    // up to two attempts, so a brief rate limit does not lose the message
+    for(let attempt=1; attempt<=2; attempt++){
+      try{
+        if(!window.ReadableStream) throw new Error('no-stream');
+        const r=await api('/chat/completions',{method:'POST',signal:g.signal,body:JSON.stringify({model,messages:c.messages,stream:true})});
+        if(!r.body) throw new Error('no-stream');
+        const reader=r.body.getReader(); const dec=new TextDecoder(); let buf='';
+        while(true){
+          const {done,value}=await reader.read(); if(done)break;
+          g.bump();
+          buf+=dec.decode(value,{stream:true});
+          const lines=buf.split('\n'); buf=lines.pop();
+          for(const l of lines){
+            const ln=l.trim(); if(!ln.startsWith('data:'))continue;
+            const pl=ln.slice(5).trim(); if(pl==='[DONE]')continue;
+            try{const j=JSON.parse(pl); const t=j.choices?.[0]?.delta?.content;
+              if(t){ if(!full) stopClock(); full+=t; cursor.before(document.createTextNode(t)); log.scrollTop=log.scrollHeight; }
+            }catch(e){}
+          }
         }
+        fail=null; break;
+      }catch(e){
+        fail=e;
+        if(full||stoppedByUser||g.ac.reason==='timeout') break;
+        if(e.status===429 && attempt===1){ note='rate limited, retrying'; await sleep(4000); g.bump(); continue; }
+        break;
       }
-    }catch(se){
-      if(full||stoppedByUser||g.ac.reason==='timeout') throw se; // don't pay twice
+    }
+
+    // the browser could not stream at all (old Safari): resend without streaming.
+    // a server status (504, 429, 401...) is NOT retried — that just burns another minute.
+    if(fail && !full && !stoppedByUser && !fail.status && g.ac.reason!=='timeout'){
+      note='retrying without streaming';
       let j=null;
       try{
         const r=await api('/chat/completions',{method:'POST',signal:g.signal,body:JSON.stringify({model,messages:c.messages,stream:false})});
-        j=await r.json();
+        j=await r.json(); fail=null;
       }catch(fe){
-        if(stoppedByUser||g.ac.reason==='timeout') throw fe;
-        j=await xhrChat(c.messages);
+        if(stoppedByUser||g.ac.reason==='timeout'||fe.status) fail=fe;
+        else { try{ j=await xhrChat(c.messages); fail=null; }catch(xe){ fail=xe; } }
       }
-      full=j.choices?.[0]?.message?.content||'';
-      if(!full) throw new Error('the model returned an empty answer');
-      cursor.before(document.createTextNode(full)); log.scrollTop=log.scrollHeight;
+      if(j){
+        full=j.choices?.[0]?.message?.content||'';
+        if(!full) fail=new Error('the model returned an empty answer');
+        else { stopClock(); cursor.before(document.createTextNode(full)); log.scrollTop=log.scrollHeight; }
+      }
     }
-    c.messages.push({role:'assistant',content:full}); touch();
-    refreshSpend();
+
+    if(full){
+      c.messages.push({role:'assistant',content:full}); touch();
+      if(fail) line('sys','·','(answer cut short: '+friendly(fail)+')');
+      refreshSpend();
+    }else{
+      c.messages.pop(); touch();
+      err(friendly(fail||new Error('no answer')));
+    }
   }catch(e){
-    if(full){ c.messages.push({role:'assistant',content:full}); touch(); line('sys','·','(answer cut short: '+friendly(e)+')'); }
-    else { c.messages.pop(); touch(); err(friendly(e)); }
-  }finally{ g.clear(); abortCtl=null; cursor.remove(); setBusy(false); }
+    c.messages.pop(); touch(); err(friendly(e));
+  }finally{ g.clear(); stopClock(); abortCtl=null; cursor.remove(); setBusy(false); }
 }
 
 const HELP=[

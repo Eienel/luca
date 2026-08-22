@@ -75,7 +75,7 @@
 
 <header>
   <span class="dot off" id="dot"></span>
-  <span class="brand">blueterm</span>
+  <span class="brand">blueterm</span><span id="ver" style="font-size:10px;color:var(--dim)">v3</span>
   <div class="hstat">
     <button id="chatsBtn" class="hbtn" type="button" title="saved chats" aria-label="saved chats">&#9776;</button>
     <button id="modelBtn" class="hbtn" type="button">model&#8230;</button>
@@ -234,12 +234,42 @@ function xhrChat(messages){
     x.open('POST',API+'/chat/completions');
     x.setRequestHeader('Authorization','Bearer '+key);
     x.setRequestHeader('Content-Type','application/json');
-    x.timeout=120000;
-    x.onload=()=>{ if(x.status>=200&&x.status<300){try{res(JSON.parse(x.responseText))}catch(e){rej(new Error('bad JSON from API'))}} else rej(new Error('HTTP '+x.status+' '+x.responseText.slice(0,200))); };
-    x.onerror=()=>rej(new Error('network error (XHR)'));
+    x.timeout=180000;
+    x.onload=()=>{ if(x.status>=200&&x.status<300){try{res(JSON.parse(x.responseText))}catch(e){rej(new Error('bad JSON from API'))}} else rej(new Error('HTTP '+x.status)); };
+    x.onerror=()=>rej(new Error('network error'));
     x.ontimeout=()=>rej(new Error('timed out'));
     x.send(JSON.stringify({model,messages,stream:false}));
   });
+}
+
+/* a model that never answers must not freeze the terminal: every request
+   carries an idle timeout, and the run button becomes a stop button. */
+const IDLE_MS=75000;
+let abortCtl=null, stoppedByUser=false;
+function guard(){
+  const ac=new AbortController(); let t=null;
+  const arm=()=>{ clearTimeout(t); t=setTimeout(()=>{ac.reason='timeout'; ac.abort();},IDLE_MS); };
+  arm();
+  return {signal:ac.signal, ac, bump:arm, clear:()=>clearTimeout(t)};
+}
+function friendly(e){
+  const m=String(e&&e.message||e);
+  if(stoppedByUser) return 'stopped.';
+  if(/abort|timeout|timed out|504|502|Gateway/i.test(m)){
+    const alt = model==='gpt-4o' ? 'gpt-5.5' : 'gpt-4o';
+    return 'no answer from "'+model+'" — that model looks down right now. try /model '+alt+' (or tap the model name up top), then send again.';
+  }
+  if(/401|403/.test(m)) return 'the API rejected your key. re-enter it with /key sk-...';
+  if(/429/.test(m)) return 'rate limited — wait a few seconds and try again.';
+  if(/insufficient|quota|balance/i.test(m)) return 'the API says your credit is exhausted.';
+  return 'request failed: '+m;
+}
+function setBusy(on){
+  busy=on; sendBtn.disabled=false;
+  sendBtn.textContent=on?'stop':'run';
+  sendBtn.style.background=on?'transparent':'';
+  sendBtn.style.color=on?'var(--err)':'';
+  sendBtn.style.border=on?'1px solid var(--line)':'';
 }
 
 async function chat(text){
@@ -247,16 +277,18 @@ async function chat(text){
   c.messages.push({role:'user',content:text}); touch();
   const d=line('a','ai>','');
   const cursor=document.createElement('span'); cursor.className='cursor'; d.appendChild(cursor);
-  busy=true; sendBtn.disabled=true;
+  stoppedByUser=false; setBusy(true);
+  const g=guard(); abortCtl=g.ac;
   let full='';
   try{
     try{
       if(!window.ReadableStream) throw new Error('no-stream');
-      const r=await api('/chat/completions',{method:'POST',body:JSON.stringify({model,messages:c.messages,stream:true})});
+      const r=await api('/chat/completions',{method:'POST',signal:g.signal,body:JSON.stringify({model,messages:c.messages,stream:true})});
       if(!r.body) throw new Error('no-stream');
       const reader=r.body.getReader(); const dec=new TextDecoder(); let buf='';
       while(true){
         const {done,value}=await reader.read(); if(done)break;
+        g.bump();
         buf+=dec.decode(value,{stream:true});
         const lines=buf.split('\n'); buf=lines.pop();
         for(const l of lines){
@@ -268,22 +300,25 @@ async function chat(text){
         }
       }
     }catch(se){
-      if(full) throw se; // stream died mid-answer: report, don't pay twice
+      if(full||stoppedByUser||g.ac.reason==='timeout') throw se; // don't pay twice
       let j=null;
       try{
-        const r=await api('/chat/completions',{method:'POST',body:JSON.stringify({model,messages:c.messages,stream:false})});
+        const r=await api('/chat/completions',{method:'POST',signal:g.signal,body:JSON.stringify({model,messages:c.messages,stream:false})});
         j=await r.json();
-      }catch(fe){ j=await xhrChat(c.messages); }
+      }catch(fe){
+        if(stoppedByUser||g.ac.reason==='timeout') throw fe;
+        j=await xhrChat(c.messages);
+      }
       full=j.choices?.[0]?.message?.content||'';
-      if(!full) throw new Error('empty response');
+      if(!full) throw new Error('the model returned an empty answer');
       cursor.before(document.createTextNode(full)); log.scrollTop=log.scrollHeight;
     }
     c.messages.push({role:'assistant',content:full}); touch();
     refreshSpend();
   }catch(e){
-    c.messages.pop(); touch();
-    err('request failed: '+(e.name||'')+' '+e.message);
-  }finally{cursor.remove(); busy=false; sendBtn.disabled=false;}
+    if(full){ c.messages.push({role:'assistant',content:full}); touch(); line('sys','·','(answer cut short: '+friendly(e)+')'); }
+    else { c.messages.pop(); touch(); err(friendly(e)); }
+  }finally{ g.clear(); abortCtl=null; cursor.remove(); setBusy(false); }
 }
 
 const HELP=[
@@ -344,7 +379,8 @@ function handle(text){
 }
 
 function submit(){
-  const t=input.value.trim(); if(!t||busy)return;
+  if(busy){ stoppedByUser=true; if(abortCtl) abortCtl.abort(); return; }
+  const t=input.value.trim(); if(!t)return;
   input.value=''; input.style.height='auto'; handle(t);
 }
 sendBtn.onclick=submit;

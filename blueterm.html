@@ -18,17 +18,19 @@
     display:flex; flex-direction:column; height:100dvh; overflow:hidden;
   }
   header{
-    flex:none; display:flex; align-items:center; gap:10px;
-    padding:10px 14px; background:var(--panel); border-bottom:1px solid var(--line);
+    flex:none; display:flex; align-items:center; gap:9px;
+    padding:10px 12px; background:var(--panel); border-bottom:1px solid var(--line);
   }
   .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
   .dot.off{background:var(--err)}
   .brand{font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px;color:var(--amber)}
-  .hstat{margin-left:auto;display:flex;gap:14px;font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden}
+  .hstat{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden}
   .hstat b{color:var(--fg);font-weight:500}
-  #modelBtn{background:none;border:1px solid var(--line);color:var(--amber);font:inherit;font-size:11px;
-    padding:3px 8px;border-radius:4px;max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
-  #modelBtn:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+  .hbtn{background:none;border:1px solid var(--line);color:var(--amber);font:inherit;font-size:11px;
+    padding:4px 8px;border-radius:4px;white-space:nowrap;cursor:pointer}
+  #modelBtn{max-width:34vw;overflow:hidden;text-overflow:ellipsis}
+  #chatsBtn{color:var(--fg);font-size:13px;line-height:1;padding:4px 9px}
+  button:focus-visible,textarea:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
   main{flex:1;overflow-y:auto;padding:14px 14px 8px;-webkit-overflow-scrolling:touch}
   .msg{margin:0 0 14px;white-space:pre-wrap;word-break:break-word}
   .msg .p{user-select:none}
@@ -36,7 +38,6 @@
   .a .p{color:var(--amber);font-weight:700}
   .sys{color:var(--dim)}
   .errm{color:var(--err)}
-  .meta{font-size:11px;color:var(--dim);margin-top:2px}
   .cursor{display:inline-block;width:7px;height:14px;background:var(--amber);vertical-align:-2px;animation:blink 1s steps(1) infinite}
   @keyframes blink{50%{opacity:0}}
   @media (prefers-reduced-motion:reduce){.cursor{animation:none}}
@@ -50,42 +51,101 @@
     padding:8px 14px;flex:none;cursor:pointer}
   #send:disabled{background:var(--amber-soft);color:var(--dim)}
   dialog{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;
-    font-family:var(--mono);max-width:min(92vw,420px);width:100%;padding:0;max-height:70dvh}
-  dialog::backdrop{background:rgba(0,0,0,.6)}
+    font-family:var(--mono);max-width:min(94vw,440px);width:100%;padding:0;max-height:76dvh}
+  dialog::backdrop{background:rgba(0,0,0,.65)}
   dialog h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--amber);margin:0;
-    padding:12px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel)}
-  #modelList{overflow-y:auto;max-height:calc(70dvh - 44px)}
+    padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;
+    position:sticky;top:0;background:var(--panel);z-index:1}
+  dialog h2 .sp{margin-left:auto}
+  .dlgbody{overflow-y:auto;max-height:calc(76dvh - 46px)}
   .mrow{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);
     color:var(--fg);font:inherit;font-size:12.5px;padding:11px 14px;cursor:pointer}
   .mrow.sel{color:var(--amber);background:var(--amber-soft)}
+  .crow{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:0 6px 0 0}
+  .crow.sel{background:var(--amber-soft)}
+  .crow .open{flex:1;min-width:0;background:none;border:0;color:var(--fg);font:inherit;font-size:12.5px;
+    text-align:left;padding:11px 14px;cursor:pointer}
+  .crow.sel .open{color:var(--amber)}
+  .crow .t{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .crow .when{display:block;font-size:10.5px;color:var(--dim);margin-top:3px}
+  .del{background:none;border:0;color:var(--dim);font:inherit;font-size:15px;padding:10px;cursor:pointer;flex:none}
+  .del:hover,.del:focus-visible{color:var(--err)}
+  .empty{padding:16px 14px;color:var(--dim);font-size:12px}
 </style>
 
 <header>
   <span class="dot off" id="dot"></span>
   <span class="brand">blueterm</span>
   <div class="hstat">
-    <button id="modelBtn" type="button">model…</button>
+    <button id="chatsBtn" class="hbtn" type="button" title="saved chats" aria-label="saved chats">&#9776;</button>
+    <button id="modelBtn" class="hbtn" type="button">model&#8230;</button>
     <span id="spend">$ --</span>
   </div>
 </header>
 <main id="log" aria-live="polite"></main>
 <footer>
   <div class="row">
-    <span class="ps1">❯</span>
+    <span class="ps1">&#10095;</span>
     <textarea id="in" rows="1" placeholder="message or /help" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send"></textarea>
     <button id="send" type="button">run</button>
   </div>
 </footer>
-<dialog id="modelDlg"><h2>select model</h2><div id="modelList"></div></dialog>
+
+<dialog id="modelDlg"><h2>select model</h2><div class="dlgbody" id="modelList"></div></dialog>
+<dialog id="chatDlg">
+  <h2>saved chats <span class="sp"></span><button id="newBtn" class="hbtn" type="button">+ new</button></h2>
+  <div class="dlgbody" id="chatList"></div>
+</dialog>
 
 <script>
 const API='https://api.bluesminds.com/v1';
 const $=id=>document.getElementById(id);
-const log=$('log'), input=$('in'), sendBtn=$('send'), dlg=$('modelDlg');
-let key=null, model=null, history=[], busy=false, models=[];
-try{key=localStorage.getItem('bm_key'); model=localStorage.getItem('bm_model')||'gpt-4o';}catch(e){model='gpt-4o'}
-$('modelBtn').textContent=model||'model…';
+const log=$('log'), input=$('in'), sendBtn=$('send');
+const modelDlg=$('modelDlg'), chatDlg=$('chatDlg');
+const MAX_CHATS=60;
+let key=null, model='gpt-4o', busy=false, models=[];
+let chats=[], curId=null;
 
+/* ---------- storage (this browser only; never leaves the device) ---------- */
+function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v);}catch(e){return null} }
+function loadState(){
+  key=ls('bm_key'); model=ls('bm_model')||'gpt-4o';
+  try{ chats=JSON.parse(ls('bm_chats')||'[]'); }catch(e){ chats=[]; }
+  if(!Array.isArray(chats)) chats=[];
+  curId=ls('bm_cur');
+  if(!chats.some(c=>c.id===curId)) curId=chats.length?chats[0].id:null;
+}
+function persist(){
+  try{
+    chats=chats.slice(0,MAX_CHATS);
+    localStorage.setItem('bm_chats',JSON.stringify(chats));
+    if(curId) localStorage.setItem('bm_cur',curId);
+  }catch(e){
+    // storage full: drop the oldest chats and try once more
+    chats=chats.slice(0,Math.max(1,Math.floor(chats.length/2)));
+    try{localStorage.setItem('bm_chats',JSON.stringify(chats))}catch(e2){err('could not save chat: phone storage is full. delete some chats.')}
+  }
+}
+const cur=()=>chats.find(c=>c.id===curId);
+function newChat(quiet){
+  const c={id:'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),title:'new chat',model,messages:[],updated:Date.now()};
+  chats.unshift(c); curId=c.id; persist(); log.innerHTML='';
+  if(!quiet) sys('new chat started.');
+  return c;
+}
+function touch(){
+  const c=cur(); if(!c)return;
+  c.updated=Date.now(); c.model=model;
+  if(!c.messages.length) c.title='new chat';
+  if((!c.title||c.title==='new chat')&&c.messages.length){
+    const first=c.messages.find(m=>m.role==='user');
+    if(first) c.title=first.content.replace(/\s+/g,' ').trim().slice(0,44)||'new chat';
+  }
+  chats.sort((a,b)=>b.updated-a.updated);
+  persist();
+}
+
+/* ---------- rendering ---------- */
 function line(cls,prefix,text){
   const d=document.createElement('div'); d.className='msg '+cls;
   if(prefix){const p=document.createElement('span');p.className='p';p.textContent=prefix+' ';d.appendChild(p);}
@@ -93,9 +153,47 @@ function line(cls,prefix,text){
   log.appendChild(d); log.scrollTop=log.scrollHeight; return d;
 }
 const sys=t=>line('sys','·',t), err=t=>line('errm','!',t);
+function renderChat(){
+  log.innerHTML='';
+  const c=cur(); if(!c){return}
+  for(const m of c.messages) line(m.role==='user'?'u':'a', m.role==='user'?'❯':'ai>', m.content);
+  log.scrollTop=log.scrollHeight;
+}
+function ago(ts){
+  const s=(Date.now()-ts)/1000;
+  if(s<60)return'just now'; if(s<3600)return Math.floor(s/60)+'m ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago';
+  if(s<604800)return Math.floor(s/86400)+'d ago';
+  return new Date(ts).toLocaleDateString();
+}
 
-function saveKey(k){key=k;try{localStorage.setItem('bm_key',k)}catch(e){} $('dot').className='dot'; sys('key saved on this device. type a message to chat, /help for commands.'); refreshSpend(); loadModels();}
+/* ---------- chat list dialog ---------- */
+function renderChatList(){
+  const list=$('chatList'); list.innerHTML='';
+  if(!chats.length){ list.innerHTML='<p class="empty">no saved chats yet. anything you type is saved here automatically.</p>'; return; }
+  for(const c of chats){
+    const row=document.createElement('div'); row.className='crow'+(c.id===curId?' sel':'');
+    const open=document.createElement('button'); open.type='button'; open.className='open';
+    const t=document.createElement('span'); t.className='t'; t.textContent=c.title||'new chat';
+    const w=document.createElement('span'); w.className='when';
+    w.textContent=ago(c.updated)+' · '+c.messages.filter(m=>m.role==='user').length+' msg · '+(c.model||model);
+    open.append(t,w);
+    open.onclick=()=>{ curId=c.id; if(c.model){model=c.model; $('modelBtn').textContent=model; ls('bm_model',model);} persist(); renderChat(); chatDlg.close(); };
+    const del=document.createElement('button'); del.type='button'; del.className='del'; del.title='delete'; del.setAttribute('aria-label','delete chat'); del.textContent='×';
+    del.onclick=()=>{
+      chats=chats.filter(x=>x.id!==c.id);
+      if(curId===c.id){ curId=chats.length?chats[0].id:null; if(!curId) newChat(true); renderChat(); }
+      persist(); renderChatList();
+    };
+    row.append(open,del); list.appendChild(row);
+  }
+}
+$('chatsBtn').onclick=()=>{ renderChatList(); chatDlg.showModal(); };
+$('newBtn').onclick=()=>{ newChat(); chatDlg.close(); };
+chatDlg.onclick=e=>{if(e.target===chatDlg)chatDlg.close()};
+modelDlg.onclick=e=>{if(e.target===modelDlg)modelDlg.close()};
 
+/* ---------- api ---------- */
 async function api(path,opts={}){
   const r=await fetch(API+path,{...opts,headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json',...(opts.headers||{})}});
   if(!r.ok){let t='';try{t=(await r.text()).slice(0,300)}catch(e){} throw new Error(r.status+' '+t);}
@@ -113,28 +211,48 @@ async function loadModels(){
     for(const id of models){
       const b=document.createElement('button'); b.type='button';
       b.className='mrow'+(id===model?' sel':''); b.textContent=id;
-      b.onclick=()=>{setModel(id); dlg.close();};
+      b.onclick=()=>{ setModel(id); modelDlg.close(); };
       list.appendChild(b);
     }
   }catch(e){err('could not load models: '+e.message)}
 }
-function setModel(id){model=id;try{localStorage.setItem('bm_model',id)}catch(e){}
-  $('modelBtn').textContent=id; sys('model → '+id);
+function setModel(id){
+  model=id; ls('bm_model',id); $('modelBtn').textContent=id; sys('model → '+id);
+  const c=cur(); if(c){c.model=id; persist();}
   [...document.querySelectorAll('.mrow')].forEach(b=>b.classList.toggle('sel',b.textContent===id));
 }
-$('modelBtn').onclick=()=>{if(!key)return err('set your key first: /key sk-...'); dlg.showModal();};
-dlg.onclick=e=>{if(e.target===dlg)dlg.close()};
+$('modelBtn').onclick=()=>{if(!key)return err('set your key first: /key sk-...'); modelDlg.showModal();};
+function saveKey(k){
+  key=k; ls('bm_key',k); $('dot').className='dot';
+  sys('key saved on this device. type a message to chat, /help for commands.');
+  refreshSpend(); loadModels();
+}
+
+function xhrChat(messages){
+  return new Promise((res,rej)=>{
+    const x=new XMLHttpRequest();
+    x.open('POST',API+'/chat/completions');
+    x.setRequestHeader('Authorization','Bearer '+key);
+    x.setRequestHeader('Content-Type','application/json');
+    x.timeout=120000;
+    x.onload=()=>{ if(x.status>=200&&x.status<300){try{res(JSON.parse(x.responseText))}catch(e){rej(new Error('bad JSON from API'))}} else rej(new Error('HTTP '+x.status+' '+x.responseText.slice(0,200))); };
+    x.onerror=()=>rej(new Error('network error (XHR)'));
+    x.ontimeout=()=>rej(new Error('timed out'));
+    x.send(JSON.stringify({model,messages,stream:false}));
+  });
+}
 
 async function chat(text){
-  history.push({role:'user',content:text});
+  let c=cur(); if(!c) c=newChat(true);
+  c.messages.push({role:'user',content:text}); touch();
   const d=line('a','ai>','');
-  const cur=document.createElement('span'); cur.className='cursor'; d.appendChild(cur);
+  const cursor=document.createElement('span'); cursor.className='cursor'; d.appendChild(cursor);
   busy=true; sendBtn.disabled=true;
   let full='';
   try{
     try{
       if(!window.ReadableStream) throw new Error('no-stream');
-      const r=await api('/chat/completions',{method:'POST',body:JSON.stringify({model,messages:history,stream:true})});
+      const r=await api('/chat/completions',{method:'POST',body:JSON.stringify({model,messages:c.messages,stream:true})});
       if(!r.body) throw new Error('no-stream');
       const reader=r.body.getReader(); const dec=new TextDecoder(); let buf='';
       while(true){
@@ -145,66 +263,83 @@ async function chat(text){
           const s=l.trim(); if(!s.startsWith('data:'))continue;
           const p=s.slice(5).trim(); if(p==='[DONE]')continue;
           try{const j=JSON.parse(p); const t=j.choices?.[0]?.delta?.content;
-            if(t){full+=t; cur.before(document.createTextNode(t)); log.scrollTop=log.scrollHeight;}
+            if(t){full+=t; cursor.before(document.createTextNode(t)); log.scrollTop=log.scrollHeight;}
           }catch(e){}
         }
       }
     }catch(se){
-      if(full) throw se; // stream died mid-answer: report, don't restart billing
-      // fall back to a plain (non-streaming) request, then XHR as a last resort
+      if(full) throw se; // stream died mid-answer: report, don't pay twice
       let j=null;
       try{
-        const r=await api('/chat/completions',{method:'POST',body:JSON.stringify({model,messages:history,stream:false})});
+        const r=await api('/chat/completions',{method:'POST',body:JSON.stringify({model,messages:c.messages,stream:false})});
         j=await r.json();
-      }catch(fe){
-        j=await xhrChat();
-      }
+      }catch(fe){ j=await xhrChat(c.messages); }
       full=j.choices?.[0]?.message?.content||'';
       if(!full) throw new Error('empty response');
-      cur.before(document.createTextNode(full)); log.scrollTop=log.scrollHeight;
+      cursor.before(document.createTextNode(full)); log.scrollTop=log.scrollHeight;
     }
-    history.push({role:'assistant',content:full});
+    c.messages.push({role:'assistant',content:full}); touch();
     refreshSpend();
   }catch(e){
-    history.pop(); err('request failed: '+(e.name||'')+' '+e.message);
-  }finally{cur.remove(); busy=false; sendBtn.disabled=false;}
-}
-
-function xhrChat(){
-  return new Promise((res,rej)=>{
-    const x=new XMLHttpRequest();
-    x.open('POST',API+'/chat/completions');
-    x.setRequestHeader('Authorization','Bearer '+key);
-    x.setRequestHeader('Content-Type','application/json');
-    x.timeout=120000;
-    x.onload=()=>{ if(x.status>=200&&x.status<300){try{res(JSON.parse(x.responseText))}catch(e){rej(new Error('bad JSON from API'))}} else rej(new Error('HTTP '+x.status+' '+x.responseText.slice(0,200))); };
-    x.onerror=()=>rej(new Error('network error (XHR)'));
-    x.ontimeout=()=>rej(new Error('timed out'));
-    x.send(JSON.stringify({model,messages:history,stream:false}));
-  });
+    c.messages.pop(); touch();
+    err('request failed: '+(e.name||'')+' '+e.message);
+  }finally{cursor.remove(); busy=false; sendBtn.disabled=false;}
 }
 
 const HELP=[
  '/key sk-...   save your API key (stored only in this browser)',
  '/model        pick a model    /model <id> sets it directly',
+ '/new          start a new chat (the current one stays saved)',
+ '/chats        list saved chats    /chats <n> opens number n',
+ '/rename <t>   rename this chat',
+ '/delete       delete this chat',
  '/usage        show credit spent so far',
- '/clear        clear screen and conversation memory',
+ '/clear        clear the screen (the chat stays saved)',
  '/help         this list',
- 'anything else is sent to the model (conversation is remembered until /clear)'
+ '',
+ 'anything else is sent to the model. chats save automatically on this',
+ 'device only — nobody with the link can see them.'
 ].join('\n');
 
 function handle(text){
   if(text.startsWith('/')){
     const [cmd,...rest]=text.split(/\s+/); const arg=rest.join(' ');
     line('u','❯',text);
-    if(cmd==='/key'&&arg)return saveKey(arg);
-    if(cmd==='/help')return sys(HELP);
-    if(cmd==='/clear'){history=[];log.innerHTML='';return sys('cleared.');}
-    if(cmd==='/model'){if(!arg)return $('modelBtn').click(); if(models.length&&!models.includes(arg))sys('note: "'+arg+'" not in /models list, trying anyway'); return setModel(arg);}
-    if(cmd==='/usage'){return refreshSpend().then(()=>sys('usage refreshed (see top right — of your $100 credit).'));}
+    if(cmd==='/key'&&arg) return saveKey(arg);
+    if(cmd==='/help') return sys(HELP);
+    if(cmd==='/clear'){ log.innerHTML=''; return sys('screen cleared — this chat is still saved (tap ☰ to reopen it).'); }
+    if(cmd==='/new'){ newChat(); return; }
+    if(cmd==='/chats'){
+      if(arg){
+        const n=parseInt(arg,10); const c=chats[n-1];
+        if(!c) return err('no chat number '+arg+'. type /chats to list them.');
+        curId=c.id; if(c.model){model=c.model;$('modelBtn').textContent=model;ls('bm_model',model);}
+        persist(); renderChat(); return sys('opened: '+(c.title||'new chat'));
+      }
+      if(!chats.length) return sys('no saved chats yet.');
+      return sys(chats.map((c,i)=>(i+1)+'. '+(c.id===curId?'* ':'  ')+(c.title||'new chat')+'  ('+ago(c.updated)+')').join('\n')+'\n\nopen one with /chats <number>, or tap ☰ up top.');
+    }
+    if(cmd==='/rename'){
+      const c=cur(); if(!c) return err('no chat open.');
+      if(!arg) return err('give it a name: /rename my project notes');
+      c.title=arg.slice(0,60); persist(); return sys('renamed to: '+c.title);
+    }
+    if(cmd==='/delete'){
+      const c=cur(); if(!c) return err('no chat open.');
+      const t=c.title||'new chat';
+      chats=chats.filter(x=>x.id!==c.id); curId=chats.length?chats[0].id:null;
+      if(!curId) newChat(true); persist(); renderChat();
+      return sys('deleted: '+t);
+    }
+    if(cmd==='/model'){
+      if(!arg) return $('modelBtn').click();
+      if(models.length&&!models.includes(arg)) sys('note: "'+arg+'" is not in the model list, trying anyway');
+      return setModel(arg);
+    }
+    if(cmd==='/usage') return refreshSpend().then(()=>sys('usage refreshed (top right — of your $100 credit).'));
     return err('unknown command. /help');
   }
-  if(!key){line('u','❯',text);return err('no key set. run: /key sk-yourkeyhere');}
+  if(!key){ line('u','❯',text); return err('no key set. run: /key sk-yourkeyhere'); }
   line('u','❯',text); chat(text);
 }
 
@@ -216,8 +351,20 @@ sendBtn.onclick=submit;
 input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit();}});
 input.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(input.scrollHeight,120)+'px';});
 
-sys('blueterm — bluesminds api console');
-if(key){$('dot').className='dot'; sys('key loaded · model '+model+' · type /help for commands'); refreshSpend(); loadModels();}
-else sys('paste your key to begin:  /key sk-yourkeyhere');
+/* ---------- boot ---------- */
+loadState();
+$('modelBtn').textContent=model;
+if(!chats.length) newChat(true);
+renderChat();
+if(key){
+  $('dot').className='dot';
+  const c=cur();
+  if(c&&c.messages.length) sys('── resumed: '+(c.title||'this chat')+' · '+chats.length+' saved · tap ☰ to switch');
+  else sys('blueterm — model '+model+' · '+chats.length+' saved chat'+(chats.length===1?'':'s')+' · /help for commands');
+  refreshSpend(); loadModels();
+}else{
+  sys('blueterm — bluesminds api console');
+  sys('paste your key to begin:  /key sk-yourkeyhere');
+}
 </script>
 </body></html>
